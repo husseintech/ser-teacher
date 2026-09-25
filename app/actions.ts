@@ -186,6 +186,24 @@ export async function addClassAction(formData: FormData) {
   revalidatePath("/attendance");
 }
 
+export async function updateClassStageAction(formData: FormData) {
+  const user = await requireTeacher();
+  const classId = z.string().uuid().parse(formData.get("classId"));
+  const stage = z.enum(["basic", "upper"]).parse(formData.get("stage"));
+  const db = getDb();
+  const [owned] = await db
+    .select({ id: classes.id })
+    .from(classes)
+    .where(and(eq(classes.id, classId), eq(classes.userId, user.id)))
+    .limit(1);
+  if (!owned) throw new Error("الصف غير موجود.");
+  await db.update(classes).set({ stage, updatedAt: new Date() }).where(eq(classes.id, classId));
+  await writeAuditLog(user, "class_stage_updated", "تحديث نوع دفتر علامات الصف", { classId, stage });
+  revalidatePath("/setup");
+  revalidatePath("/gradebooks");
+  revalidatePath("/attendance");
+}
+
 export async function assignSubjectAction(formData: FormData) {
   const user = await requireTeacher();
   const classId = z.string().uuid().parse(formData.get("classId"));

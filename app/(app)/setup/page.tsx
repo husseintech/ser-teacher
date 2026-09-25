@@ -1,6 +1,6 @@
 import { and, asc, eq } from "drizzle-orm";
 import { BookPlus, GraduationCap, Link2, Save, Users } from "lucide-react";
-import { addClassAction, addSubjectAction, assignSubjectAction, saveProfileAction, syncRosterAction } from "@/app/actions";
+import { addClassAction, addSubjectAction, assignSubjectAction, saveProfileAction, syncRosterAction, updateClassStageAction } from "@/app/actions";
 import { getDb } from "@/db";
 import { classes, students, subjects, teacherProfiles, teachingAssignments } from "@/db/schema";
 import { requireTeacher } from "@/lib/auth";
@@ -66,16 +66,23 @@ export default async function SetupPage() {
             <div className="card-title"><h2>الصفوف التي أدرسها</h2><GraduationCap color="var(--green)" /></div>
             <form action={addClassAction} className="inline-form">
               <div className="field"><label htmlFor="className">اسم الصف والشعبة</label><input className="input" id="className" name="name" placeholder="الصف الرابع أ" required /></div>
-              <div className="field"><label htmlFor="stage">نوع دفتر العلامات</label><select className="select" id="stage" name="stage" defaultValue="basic"><option value="basic">المرحلة الأساسية (1–4)</option><option value="upper">المرحلة من الخامس فما فوق</option></select></div>
+              <div className="field"><label htmlFor="stage">نوع دفتر العلامات</label><select className="select" id="stage" name="stage" required><option value="" disabled>اختر نوع المرحلة</option><option value="basic">المرحلة الأساسية (1–4)</option><option value="upper">المرحلة من الخامس فما فوق</option></select></div>
               <button className="btn btn-primary" type="submit">حفظ الصف</button>
             </form>
             <p style={{ color: "var(--muted)", fontSize: ".82rem", margin: "10px 0 0" }}>إذا كان الصف موجودًا مسبقًا، فإن حفظ الاسم نفسه يحدّث نوع مرحلته بدل تجاهل الاختيار.</p>
             <div className="divider" />
             <div className="class-stage-list">{classRows.length ? classRows.map((schoolClass) => (
-              <div className="class-stage-item" key={schoolClass.id}>
+              <form action={updateClassStageAction} className="class-stage-item" key={schoolClass.id}>
                 <strong>{schoolClass.name}</strong>
-                <span>{schoolClass.stage === "basic" ? "المرحلة الأساسية (1–4)" : "المرحلة من الخامس فما فوق"}</span>
-              </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <input type="hidden" name="classId" value={schoolClass.id} />
+                  <select className="select" name="stage" defaultValue={schoolClass.stage} aria-label={`نوع دفتر العلامات لصف ${schoolClass.name}`}>
+                    <option value="basic">المرحلة الأساسية (1–4)</option>
+                    <option value="upper">المرحلة من الخامس فما فوق</option>
+                  </select>
+                  <button className="btn btn-secondary btn-small" type="submit">حفظ</button>
+                </div>
+              </form>
             )) : <span style={{ color: "var(--muted)" }}>لم تضف صفوفًا بعد.</span>}</div>
           </div>
         </section>
