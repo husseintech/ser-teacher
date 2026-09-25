@@ -6,7 +6,8 @@ export async function GET() {
   try {
     await getDb().execute(sql`select 1`);
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (error) {
+    console.error("Database health check failed", error);
     return NextResponse.json({ ok: false }, { status: 503 });
   }
 }
