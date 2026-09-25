@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "خدمات معلمين", template: "%s | خدمات معلمين" },
-  description: "دفتر العلامات ودفتر الحضور والغياب للمعلم، محفوظان وآمنان في حساب واحد.",
+  description: "دفتر العلامات ودفتر الحضور والغياب للمعلم، جاهزان للطباعة والتعبئة اليدوية.",
   icons: { icon: "/favicon.svg" },
 };
 

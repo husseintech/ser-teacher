@@ -2,7 +2,7 @@ import { and, count, eq } from "drizzle-orm";
 import { ArrowLeft, BookOpenCheck, CalendarCheck2, GraduationCap, Settings2, Users } from "lucide-react";
 import Link from "next/link";
 import { getDb } from "@/db";
-import { attendanceBooks, classes, gradebooks, students, subjects, teacherProfiles } from "@/db/schema";
+import { classes, students, subjects, teacherProfiles, teachingAssignments } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 
 export const metadata = { title: "لوحة المعلم" };
@@ -10,13 +10,12 @@ export const metadata = { title: "لوحة المعلم" };
 export default async function DashboardPage() {
   const user = await requireUser();
   const db = getDb();
-  const [[profile], [classCount], [subjectCount], [studentCount], [gradebookCount], [attendanceCount]] = await Promise.all([
+  const [[profile], [classCount], [subjectCount], [studentCount], [assignmentCount]] = await Promise.all([
     db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, user.id)).limit(1),
     db.select({ value: count() }).from(classes).where(eq(classes.userId, user.id)),
     db.select({ value: count() }).from(subjects).where(eq(subjects.userId, user.id)),
     db.select({ value: count() }).from(students).where(and(eq(students.userId, user.id), eq(students.active, true))),
-    db.select({ value: count() }).from(gradebooks).where(eq(gradebooks.userId, user.id)),
-    db.select({ value: count() }).from(attendanceBooks).where(eq(attendanceBooks.userId, user.id)),
+    db.select({ value: count() }).from(teachingAssignments).where(eq(teachingAssignments.userId, user.id)),
   ]);
   const profileReady = Boolean(profile?.schoolName && profile?.schoolNationalId);
 
@@ -36,14 +35,14 @@ export default async function DashboardPage() {
         <Stat icon={<GraduationCap />} value={classCount.value} label="الصفوف" />
         <Stat icon={<BookOpenCheck />} value={subjectCount.value} label="المواد" />
         <Stat icon={<Users />} value={studentCount.value} label="الطلاب" />
-        <Stat icon={<CalendarCheck2 />} value={gradebookCount.value + attendanceCount.value} label="الدفاتر" />
+        <Stat icon={<CalendarCheck2 />} value={assignmentCount.value + classCount.value} label="نماذج الطباعة" />
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
         <div className="card-title"><div><h2>خدماتك</h2><span style={{ color: "var(--muted)" }}>ابدأ بالخدمة التي تحتاجها الآن.</span></div></div>
         <div className="quick-links">
-          <Link className="quick-link" href="/gradebooks"><BookOpenCheck /><strong>دفتر العلامات</strong><span>إدخال العلامات وحساب المجموع والطباعة.</span></Link>
-          <Link className="quick-link" href="/attendance"><CalendarCheck2 /><strong>الحضور والغياب</strong><span>متابعة يومية من آب حتى حزيران.</span></Link>
+          <Link className="quick-link" href="/gradebooks"><BookOpenCheck /><strong>دفتر العلامات</strong><span>طباعة دفتر ورقي فارغ للفصلين الدراسيين.</span></Link>
+          <Link className="quick-link" href="/attendance"><CalendarCheck2 /><strong>الحضور والغياب</strong><span>طباعة سجل ورقي من آب حتى حزيران.</span></Link>
           <Link className="quick-link" href="/setup"><Users /><strong>إدارة الطلاب</strong><span>ألصق أسماء طلابك من Excel، كل اسم في سطر.</span></Link>
         </div>
       </section>
@@ -51,11 +50,11 @@ export default async function DashboardPage() {
       <section className="content-grid">
         <div className="card">
           <div className="card-title"><h3>دفاتر العلامات</h3><Link href="/gradebooks" style={{ color: "var(--green)", fontWeight: 700 }}>فتح <ArrowLeft size={15} style={{ verticalAlign: "middle" }} /></Link></div>
-          <p style={{ margin: 0, color: "var(--muted)" }}>{gradebookCount.value ? `لديك ${gradebookCount.value} دفتر علامات محفوظ.` : "لم تُنشئ دفتر علامات بعد."}</p>
+          <p style={{ margin: 0, color: "var(--muted)" }}>{assignmentCount.value ? `${assignmentCount.value} صف/مادة جاهز للطباعة، بصفحتين لكل منها.` : "اربط المواد بالصفوف لتجهيز دفتر العلامات."}</p>
         </div>
         <div className="card">
           <div className="card-title"><h3>دفاتر الحضور</h3><Link href="/attendance" style={{ color: "var(--green)", fontWeight: 700 }}>فتح <ArrowLeft size={15} style={{ verticalAlign: "middle" }} /></Link></div>
-          <p style={{ margin: 0, color: "var(--muted)" }}>{attendanceCount.value ? `لديك ${attendanceCount.value} دفتر حضور وغياب محفوظ.` : "لم تُنشئ دفتر حضور وغياب بعد."}</p>
+          <p style={{ margin: 0, color: "var(--muted)" }}>{classCount.value ? `${classCount.value} صف جاهز لطباعة دفتر الحضور والغياب.` : "أضف صفوفك لتجهيز دفتر الحضور والغياب."}</p>
         </div>
       </section>
     </>

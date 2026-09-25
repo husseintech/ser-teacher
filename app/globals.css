@@ -212,6 +212,17 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .weekend { background: #e6e9eb !important; }
 .attendance-select { width: 44px; height: 38px; border: 0; text-align: center; background: transparent; font-size: .78rem; cursor: pointer; }
 .print-note { padding: 13px 15px; border: 1px dashed #a9b8bf; border-radius: 11px; color: var(--muted); font-size: .9rem; background: #f9fbfb; }
+.print-control-card { border-top: 4px solid var(--green); }
+.register-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.register-summary > div { min-height: 82px; padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: #f8fafb; }
+.register-summary span { display: block; color: var(--muted); font-size: .8rem; }
+.register-summary strong { display: block; margin-top: 5px; color: var(--navy); }
+.print-actions { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 2px; }
+.print-actions .btn { min-width: 210px; }
+.check-option { display: flex; align-items: flex-start; gap: 11px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 12px; background: #f8fafb; cursor: pointer; }
+.check-option input { width: 19px; height: 19px; margin-top: 3px; accent-color: var(--green); }
+.check-option span { display: grid; }
+.check-option small { color: var(--muted); }
 
 @media (max-width: 1000px) {
   .landing { grid-template-columns: 1fr; background: #f7fafb; }
@@ -238,6 +249,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .stat-card strong { font-size: 1.3rem; }
   .quick-links { grid-template-columns: 1fr; }
   .form-row, .roster-grid { grid-template-columns: 1fr; }
+  .register-summary { grid-template-columns: 1fr 1fr; }
+  .print-actions .btn { min-width: 0; flex: 1 1 100%; }
   .card { border-radius: 14px; }
 }
 
@@ -247,6 +260,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .stats-grid { grid-template-columns: 1fr; }
   .auth-page { padding: 14px; }
   .auth-card { border-radius: 17px; }
+  .register-summary { grid-template-columns: 1fr; }
 }
 
 @media print {

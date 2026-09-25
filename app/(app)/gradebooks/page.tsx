@@ -1,9 +1,7 @@
 import { asc, eq } from "drizzle-orm";
-import { BookOpenCheck, Plus } from "lucide-react";
-import Link from "next/link";
-import { createGradebookAction } from "@/app/actions";
+import { BookOpenCheck, Printer } from "lucide-react";
 import { getDb } from "@/db";
-import { classes, gradebooks, subjects, teachingAssignments } from "@/db/schema";
+import { classes, subjects, teacherProfiles, teachingAssignments } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 
 export const metadata = { title: "دفتر العلامات" };
@@ -11,44 +9,102 @@ export const metadata = { title: "دفتر العلامات" };
 export default async function GradebooksPage() {
   const user = await requireUser();
   const db = getDb();
-  const [assignments, books] = await Promise.all([
+  const [assignments, [profile]] = await Promise.all([
     db
-      .select({ id: teachingAssignments.id, className: classes.name, subjectName: subjects.name })
+      .select({
+        id: teachingAssignments.id,
+        className: classes.name,
+        stage: classes.stage,
+        subjectName: subjects.name,
+      })
       .from(teachingAssignments)
       .innerJoin(classes, eq(classes.id, teachingAssignments.classId))
       .innerJoin(subjects, eq(subjects.id, teachingAssignments.subjectId))
       .where(eq(teachingAssignments.userId, user.id))
       .orderBy(asc(classes.name), asc(subjects.name)),
-    db
-      .select({ id: gradebooks.id, academicYear: gradebooks.academicYear, className: classes.name, subjectName: subjects.name, updatedAt: gradebooks.updatedAt })
-      .from(gradebooks)
-      .innerJoin(classes, eq(classes.id, gradebooks.classId))
-      .innerJoin(subjects, eq(subjects.id, gradebooks.subjectId))
-      .where(eq(gradebooks.userId, user.id))
-      .orderBy(asc(classes.name), asc(subjects.name)),
+    db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, user.id)).limit(1),
   ]);
+
+  const basicCount = assignments.filter((item) => item.stage === "basic").length;
+  const upperCount = assignments.filter((item) => item.stage === "upper").length;
 
   return (
     <>
       <header className="page-header">
-        <div><h1>دفتر العلامات</h1><p>دفتر مستقل لكل صف ومادة، مع حفظ تلقائي في حسابك بعد الضغط على حفظ.</p></div>
+        <div>
+          <h1>دفتر العلامات للطباعة</h1>
+          <p>دفتر ورقي فارغ بأسماء الطلاب، مطابق لآلية منصة المدرسة ومن دون إدخال أو حفظ علامات إلكترونيًا.</p>
+        </div>
       </header>
 
-      <section className="card">
-        <div className="card-title"><div><h2>إنشاء أو فتح دفتر</h2><span style={{ color: "var(--muted)" }}>اختر التكليف التعليمي الذي سجلته في بياناتك.</span></div></div>
-        {assignments.length ? <div className="roster-grid">{assignments.map((assignment) => (
-          <form action={createGradebookAction} className="roster-card" key={assignment.id}>
-            <input type="hidden" name="assignmentId" value={assignment.id} />
-            <h3>{assignment.subjectName}</h3><p>{assignment.className}</p>
-            <button className="btn btn-primary" style={{ width: "100%" }} type="submit"><Plus size={17} />إنشاء أو فتح الدفتر</button>
+      <div className="print-note" style={{ marginBottom: 18 }}>
+        يُطبع الغلاف وحده، ثم تُطبع صفحتان لكل صف ومادة: الفصل الدراسي الأول والفصل الدراسي الثاني. جميع الصفحات A4 بالطول.
+      </div>
+
+      <section className="card print-control-card">
+        <div className="card-title">
+          <div>
+            <h2>تجهيز دفتر المعلم</h2>
+            <span style={{ color: "var(--muted)" }}>اختر نوع الدفتر وعدد الأسطر، ثم اطبع الغلاف أو صفحات العلامات.</span>
+          </div>
+          <BookOpenCheck color="var(--green)" />
+        </div>
+
+        {assignments.length ? (
+          <form className="form-grid" method="get" target="_blank">
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="grade-stage">نوع دفتر العلامات</label>
+                <select className="select" id="grade-stage" name="stage" defaultValue={basicCount ? "basic" : "upper"}>
+                  <option value="basic" disabled={!basicCount}>المرحلة الأساسية (1–4) — {basicCount} صف/مادة</option>
+                  <option value="upper" disabled={!upperCount}>الأساسي العليا (5–6) — {upperCount} صف/مادة</option>
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="grade-rows">عدد أسطر الطلاب</label>
+                <select className="select" id="grade-rows" name="rows" defaultValue="40">
+                  {Array.from({ length: 16 }, (_, index) => index + 35).map((value) => <option value={value} key={value}>{value}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="register-summary">
+              <div><span>اسم المعلم</span><strong>{user.fullName}</strong></div>
+              <div><span>العام الدراسي</span><strong dir="ltr">{profile?.academicYear ?? "2026/2027"}</strong></div>
+              <div><span>المرحلة الأساسية</span><strong>{basicCount * 2} صفحة</strong></div>
+              <div><span>الأساسي العليا</span><strong>{upperCount * 2} صفحة</strong></div>
+            </div>
+
+            <div className="print-actions">
+              <button className="btn btn-secondary" formAction="/print/gradebook/all/cover" type="submit">
+                <Printer size={18} />طباعة الغلاف
+              </button>
+              <button className="btn btn-dark" formAction="/print/gradebook/all/records" type="submit">
+                <Printer size={18} />طباعة صفحات العلامات
+              </button>
+            </div>
           </form>
-        ))}</div> : <div className="empty-state"><BookOpenCheck size={38} /><div>اربط مادة بصف من صفحة «بياناتي وصفوفي» أولًا.</div></div>}
+        ) : (
+          <div className="empty-state"><BookOpenCheck size={38} /><div>اربط المواد بالصفوف من صفحة «بياناتي وصفوفي» أولًا.</div></div>
+        )}
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
-        <div className="card-title"><h2>دفاتري المحفوظة</h2></div>
-        {books.length ? <div className="data-table-wrap"><table className="data-table"><thead><tr><th>الصف</th><th>المادة</th><th>العام الدراسي</th><th>آخر تحديث</th><th></th></tr></thead><tbody>{books.map((book) => <tr key={book.id}><td>{book.className}</td><td>{book.subjectName}</td><td dir="ltr">{book.academicYear}</td><td>{new Intl.DateTimeFormat("ar-PS", { dateStyle: "medium" }).format(book.updatedAt)}</td><td><Link className="btn btn-secondary btn-small" href={`/gradebooks/${book.id}`}>فتح الدفتر</Link></td></tr>)}</tbody></table></div> : <div className="empty-state">لا توجد دفاتر محفوظة بعد.</div>}
-      </section>
+      {assignments.length ? (
+        <section className="card" style={{ marginTop: 20 }}>
+          <div className="card-title"><h2>الصفوف والمواد المدرجة في الدفتر</h2></div>
+          <div className="data-table-wrap">
+            <table className="data-table">
+              <thead><tr><th>الصف</th><th>المادة</th><th>نوع الدفتر</th><th>صفحات الطباعة</th></tr></thead>
+              <tbody>{assignments.map((assignment) => <tr key={assignment.id}>
+                <td>{assignment.className}</td>
+                <td>{assignment.subjectName}</td>
+                <td>{assignment.stage === "basic" ? "المرحلة الأساسية (1–4)" : "الأساسي العليا (5–6)"}</td>
+                <td>صفحتان</td>
+              </tr>)}</tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }

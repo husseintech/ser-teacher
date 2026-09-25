@@ -16,7 +16,7 @@ export default async function HomePage() {
         <Brand />
         <div className="landing-brand-copy">
           <h2>دفاترك المدرسية، منظمة وجاهزة للطباعة.</h2>
-          <p>أدخل صفوفك وموادك وأسماء طلابك مرة واحدة، ثم تابع العلامات والحضور والغياب من أي جهاز.</p>
+          <p>أدخل صفوفك وموادك وأسماء طلابك مرة واحدة، ثم اطبع دفاتر العلامات والحضور والغياب الرسمية الجاهزة للتعبئة اليدوية.</p>
           <div className="service-chips">
             <span className="service-chip">دفتر العلامات</span>
             <span className="service-chip">دفتر الحضور والغياب</span>
@@ -27,7 +27,7 @@ export default async function HomePage() {
       <section className="landing-panel landing-entry">
         <div className="entry-card">
           <h2>ابدأ من هنا</h2>
-          <p>حساب واحد يحفظ بياناتك وطلابك ودفاترك للعودة إليها في أي وقت.</p>
+          <p>حساب واحد يحفظ بياناتك وأسماء طلابك، ويجهز دفاترك الورقية للطباعة في أي وقت.</p>
           <div className="button-stack">
             <Link className="btn btn-primary" href="/register">إنشاء حساب معلم</Link>
             <Link className="btn btn-secondary" href="/login">تسجيل الدخول</Link>
@@ -35,7 +35,7 @@ export default async function HomePage() {
           <div className="divider" />
           <div style={{ display: "grid", gap: 12 }}>
             <Feature icon={<ShieldCheck size={20} />} text="تأكيد البريد وحماية بيانات كل معلم" />
-            <Feature icon={<BookCheck size={20} />} text="علامات موزعة 10، 20، 10، 20، 40" />
+            <Feature icon={<BookCheck size={20} />} text="دفاتر ورقية فارغة دون إدخال علامات إلكتروني" />
             <Feature icon={<CalendarDays size={20} />} text="سجل حضور من آب حتى حزيران" />
           </div>
         </div>

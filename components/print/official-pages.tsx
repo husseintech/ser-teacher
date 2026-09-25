@@ -1,14 +1,22 @@
-import { ACADEMIC_MONTHS, ATTENDANCE_STATUSES, arabicWeekday, isWeekend, isoDate, monthDays, monthYear } from "@/lib/constants";
+import type { CSSProperties } from "react";
+import { ACADEMIC_MONTHS, arabicWeekday, isWeekend, monthDays, monthYear } from "@/lib/constants";
 
 type Profile = { schoolName: string; schoolNationalId: string; directorate: string; academicYear: string };
 type PrintStudent = { id: string; name: string; status: string };
-type GradeRecord = { studentId: string; participation10: string | null; firstExam20: string | null; activities10: string | null; secondExam20: string | null; finalExam40: string | null; notes: string };
-type AttendanceRecord = { studentId: string; attendanceDate: string; status: string };
+
+function paddedStudents(students: PrintStudent[], rowsCount: number, prefix: string) {
+  const rows = [...students.slice(0, rowsCount)];
+  while (rows.length < rowsCount) rows.push({ id: `${prefix}-${rows.length}`, name: "", status: "" });
+  return rows;
+}
+
+function rowStyle(rowsCount: number) {
+  return { "--rows-count": rowsCount } as CSSProperties;
+}
 
 export function OfficialCover({ title, teacherName, profile, classNames, subjectNames }: { title: string; teacherName: string; profile: Profile; classNames: string[]; subjectNames?: string[] }) {
   return (
     <article className="print-page print-cover">
-      {/* CC0 source: Wikimedia Commons, Coat of arms of Palestine.svg */}
       <img className="print-emblem" src="/palestine-emblem.svg" alt="شعار دولة فلسطين" />
       <p className="print-country">دولة فلسطين</p>
       <p className="print-ministry">وزارة التربية والتعليم العالي</p>
@@ -27,56 +35,169 @@ export function OfficialCover({ title, teacherName, profile, classNames, subject
   );
 }
 
-export function PrintHeader({ profile, title, subtitle }: { profile: Profile; title: string; subtitle: string }) {
-  return <header className="print-header"><h1>{profile.schoolName || "اسم المدرسة"} — {title}</h1><p>{subtitle} | العام الدراسي {profile.academicYear}</p><div className="print-header-line" /></header>;
+function RegisterHeader({ profile, teacherName }: { profile: Profile; teacherName?: string }) {
+  return (
+    <header className="register-header">
+      <strong>{profile.schoolName || "اسم المدرسة"}</strong>
+      {teacherName ? <strong>المعلم: {teacherName}</strong> : <span />}
+      <strong>العام الدراسي: {profile.academicYear}</strong>
+    </header>
+  );
 }
 
-export function GradebookPages({ profile, className, subjectName, students, records }: { profile: Profile; className: string; subjectName: string; students: PrintStudent[]; records: GradeRecord[] }) {
-  const recordMap = new Map(records.map((record) => [record.studentId, record]));
-  const padded = [...students.slice(0, 50)];
-  while (padded.length < 50) padded.push({ id: `empty-${padded.length}`, name: "", status: "" });
-  return <>{[padded.slice(0, 25), padded.slice(25, 50)].map((pageStudents, pageIndex) => <article className="print-page" key={pageIndex}>
-    <PrintHeader profile={profile} title="سجل العلامات" subtitle={`${subjectName} — ${className}`} />
-    <table className="official-table"><thead><tr><th className="number-col">م</th><th className="name-col">اسم الطالب</th><th>مشاركة<br />10</th><th>اختبار أول<br />20</th><th>أنشطة<br />10</th><th>اختبار ثانٍ<br />20</th><th>نهائي<br />40</th><th className="total-col">المجموع<br />100</th><th className="notes-col">ملاحظات</th></tr></thead><tbody>
-      {pageStudents.map((student, index) => {
-        const record = recordMap.get(student.id);
-        const values = [record?.participation10, record?.firstExam20, record?.activities10, record?.secondExam20, record?.finalExam40];
-        const hasValue = values.some((value) => value !== null && value !== undefined);
-        const total = values.reduce<number>((sum, value) => sum + (value ? Number(value) : 0), 0);
-        return <tr key={student.id}><td>{pageIndex * 25 + index + 1}</td><td className="name-col">{student.name}</td><td>{record?.participation10 ?? ""}</td><td>{record?.firstExam20 ?? ""}</td><td>{record?.activities10 ?? ""}</td><td>{record?.secondExam20 ?? ""}</td><td>{record?.finalExam40 ?? ""}</td><td className="total-col">{hasValue ? total : ""}</td><td className="notes-col">{record?.notes ?? ""}</td></tr>;
-      })}
-    </tbody></table>
-    <div className="print-signatures"><span>توقيع المعلم: ............................</span><span>متابعة مدير المدرسة: ............................</span></div>
-    <div className="page-number">صفحة {pageIndex + 1} من 2</div>
-  </article>)}</>;
+export function GradebookPages({ profile, teacherName, className, subjectName, students, rowsCount, stage }: { profile: Profile; teacherName: string; className: string; subjectName: string; students: PrintStudent[]; rowsCount: number; stage: "basic" | "upper" }) {
+  const rows = paddedStudents(students, rowsCount, `grade-${className}-${subjectName}`);
+  const terms = [
+    { name: "الفصل الدراسي الأول", months: ["أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول"] },
+    { name: "الفصل الدراسي الثاني", months: ["شباط", "آذار", "نيسان", "أيار"] },
+  ];
+
+  return <>{terms.map((term, termIndex) => (
+    <article className="print-page register-page" key={term.name}>
+      <RegisterHeader profile={profile} teacherName={teacherName} />
+      <h1 className="register-title">{term.name}</h1>
+      <div className="register-meta"><strong>{className}</strong><strong>المبحث: {subjectName}</strong></div>
+      {stage === "basic" ? (
+        <table className="official-table grade-register-table" style={rowStyle(rowsCount)} aria-label={`${term.name} ${className} ${subjectName}`}>
+          <thead>
+            <tr><th rowSpan={2} className="number-col">الرقم</th><th rowSpan={2} className="name-col">اسم الطالب</th><th colSpan={4}>الشهر</th><th rowSpan={2} className="term-average">معدل<br />{term.name.replace("الدراسي ", "")}</th></tr>
+            <tr>{term.months.map((month) => <th key={month}>{month}</th>)}</tr>
+          </thead>
+          <tbody>{rows.map((student, index) => <tr key={student.id}><td>{index + 1}</td><td className="name-col">{student.name}</td>{term.months.map((month) => <td key={month}></td>)}<td></td></tr>)}</tbody>
+        </table>
+      ) : (
+        <table className="official-table grade-register-table upper-grade-table" style={rowStyle(rowsCount)} aria-label={`${term.name} ${className} ${subjectName}`}>
+          <thead>
+            <tr>
+              <th rowSpan={2} className="number-col">الرقم</th>
+              <th rowSpan={2} className="name-col">اسم الطالب</th>
+              <th colSpan={4}>أعمال الفصل (60)</th>
+              <th rowSpan={2}>الامتحان النهائي<br />40</th>
+              <th rowSpan={2}>مجموع الفصل<br />100</th>
+              {termIndex === 1 ? <th rowSpan={2}>علامة<br />الإكمال</th> : null}
+            </tr>
+            <tr><th>مشاركة<br />10</th><th>اختبار أول<br />20</th><th>أنشطة<br />10</th><th>اختبار ثانٍ<br />20</th></tr>
+          </thead>
+          <tbody>{rows.map((student, index) => <tr key={student.id}><td>{index + 1}</td><td className="name-col">{student.name}</td>{Array.from({ length: termIndex === 1 ? 7 : 6 }, (_, cell) => <td key={cell}></td>)}</tr>)}</tbody>
+        </table>
+      )}
+    </article>
+  ))}</>;
 }
 
 export function StudentStatusPage({ profile, className, students, rowsCount }: { profile: Profile; className: string; students: PrintStudent[]; rowsCount: number }) {
-  const rows = [...students.slice(0, rowsCount)];
-  while (rows.length < rowsCount) rows.push({ id: `empty-${rows.length}`, name: "", status: "" });
-  return <article className="print-page"><PrintHeader profile={profile} title="بيان حالة الطلاب" subtitle={className} /><table className="official-table student-status-table"><thead><tr><th className="number-col">م</th><th className="name-col">اسم الطالب</th><th className="status-col">الحالة</th><th className="date-col">تاريخ الالتحاق</th><th>ملاحظات</th></tr></thead><tbody>{rows.map((student, index) => <tr key={student.id}><td>{index + 1}</td><td className="name-col">{student.name}</td><td>{student.status}</td><td></td><td></td></tr>)}</tbody></table><div className="print-signatures"><span>مربي الصف: ............................</span><span>مدير المدرسة: ............................</span></div></article>;
+  const rows = paddedStudents(students, rowsCount, `status-${className}`);
+  return (
+    <article className="print-page register-page student-status-page">
+      <div className="status-page-top"><strong>{profile.schoolName || "اسم المدرسة"}</strong><strong>الصف: {className}</strong></div>
+      <h1 className="register-title">جدول أحوال الطلاب</h1>
+      <table className="official-table student-status-table" style={rowStyle(rowsCount)}>
+        <thead>
+          <tr>
+            <th rowSpan={2} className="number-col">العدد<br />المتسلسل</th>
+            <th rowSpan={2} className="name-col">اسم الطالب</th>
+            <th rowSpan={2}>مكان<br />الولادة</th>
+            <th colSpan={3}>تاريخ الميلاد</th>
+            <th colSpan={3}>العمر في أول أيلول</th>
+            <th rowSpan={2}>تاريخ دخول<br />الصف الحالي</th>
+            <th rowSpan={2}>تاريخ دخول<br />الصف الأول</th>
+            <th colSpan={3}>العمر عند دخول الصف الأول</th>
+            <th rowSpan={2}>الرسوم المدرسية<br />بالشيكل</th>
+            <th rowSpan={2}>رقم وصل<br />المدفوعات</th>
+            <th rowSpan={2}>رقمه في سجل<br />المدرسة العام</th>
+            <th rowSpan={2}>ملاحظات</th>
+          </tr>
+          <tr>{Array.from({ length: 3 }, (_, index) => <th key={`birth-${index}`}>{["يوم", "شهر", "سنة"][index]}</th>)}{Array.from({ length: 3 }, (_, index) => <th key={`sep-${index}`}>{["يوم", "شهر", "سنة"][index]}</th>)}{Array.from({ length: 3 }, (_, index) => <th key={`first-${index}`}>{["يوم", "شهر", "سنة"][index]}</th>)}</tr>
+        </thead>
+        <tbody>{rows.map((student, index) => <tr key={student.id}><td>{index + 1}</td><td className="name-col">{student.name}</td>{Array.from({ length: 16 }, (_, cell) => <td key={cell}></td>)}</tr>)}</tbody>
+      </table>
+    </article>
+  );
 }
 
-export function AttendanceMonthPage({ profile, className, students, records, rowsCount, month, augustFullyShaded }: { profile: Profile; className: string; students: PrintStudent[]; records: AttendanceRecord[]; rowsCount: number; month: number; augustFullyShaded: boolean }) {
+export function AttendanceMonthPage({ profile, className, students, rowsCount, month, augustFullyShaded }: { profile: Profile; className: string; students: PrintStudent[]; rowsCount: number; month: number; augustFullyShaded: boolean }) {
   const days = monthDays(profile.academicYear, month);
   const year = monthYear(profile.academicYear, month);
   const monthName = ACADEMIC_MONTHS.find((item) => item.number === month)?.name;
-  const recordMap = new Map(records.map((record) => [`${record.studentId}|${record.attendanceDate}`, record.status]));
-  const rows = [...students.slice(0, rowsCount)];
-  while (rows.length < rowsCount) rows.push({ id: `empty-${month}-${rows.length}`, name: "", status: "" });
-  return <article className="print-page"><PrintHeader profile={profile} title={`سجل الحضور والغياب — ${monthName} ${year}`} subtitle={className} /><table className="official-table attendance-print"><thead><tr><th className="number-col">م</th><th className="name-col">اسم الطالب</th>{Array.from({ length: days }, (_, index) => index + 1).map((day) => { const shaded = isWeekend(profile.academicYear, month, day) || (month === 8 && augustFullyShaded); return <th className={`day-col attendance-day-head${shaded ? " weekend-cell" : ""}`} key={day}>{day} {arabicWeekday(profile.academicYear, month, day)}</th>; })}<th>غ</th><th>ح</th></tr></thead><tbody>{rows.map((student, index) => {
-    let absent = 0; let present = 0;
-    return <tr key={student.id}><td>{index + 1}</td><td className="name-col">{student.name}</td>{Array.from({ length: days }, (_, dayIndex) => dayIndex + 1).map((day) => {
-      const date = isoDate(profile.academicYear, month, day); const status = recordMap.get(`${student.id}|${date}`); const shaded = isWeekend(profile.academicYear, month, day) || (month === 8 && augustFullyShaded); if (status === "absent") absent += 1; if (status === "present") present += 1; const mark = status ? ATTENDANCE_STATUSES[status as keyof typeof ATTENDANCE_STATUSES]?.mark : ""; return <td className={shaded ? "weekend-cell" : ""} key={date}>{mark}</td>;
-    })}<td>{student.name ? absent : ""}</td><td>{student.name ? present : ""}</td></tr>;
-  })}<tr><th colSpan={2}>مجموع الحضور اليومي</th>{Array.from({ length: days }, (_, dayIndex) => dayIndex + 1).map((day) => { const date = isoDate(profile.academicYear, month, day); const total = records.filter((record) => record.attendanceDate === date && record.status === "present").length; return <th key={date}>{total || ""}</th>; })}<th></th><th></th></tr></tbody></table><div className="print-signatures"><span>توقيع المعلم: ............................</span><span>متابعة مدير المدرسة: ............................</span></div></article>;
+  const semester = month >= 8 || month === 1 ? "الأول" : "الثاني";
+  const rows = paddedStudents(students, rowsCount, `attendance-${month}`);
+
+  return (
+    <article className="print-page register-page attendance-page">
+      <h1 className="register-title">جدول الحضور</h1>
+      <p className="attendance-subtitle">عدد الاجتماعات في كل يوم من الشهر: {monthName} ({month}) &nbsp; الفصل: {semester} &nbsp; السنة الدراسية: {profile.academicYear}</p>
+      <table className="official-table attendance-print" style={rowStyle(rowsCount)} aria-label={`جدول حضور شهر ${monthName}`}>
+        <thead><tr>
+          <th className="number-col">الرقم</th>
+          <th className="name-col">اسم الطالب</th>
+          {Array.from({ length: days }, (_, index) => index + 1).map((day) => {
+            const shaded = isWeekend(profile.academicYear, month, day) || (month === 8 && augustFullyShaded);
+            return <th className={`day-col${shaded ? " weekend-cell" : ""}`} key={day}><span>{arabicWeekday(profile.academicYear, month, day)}</span><b>{day}</b></th>;
+          })}
+          <th className="month-total-col">مجموع الاجتماعات بالشهر</th>
+        </tr></thead>
+        <tbody>{rows.map((student, index) => <tr key={student.id}>
+          <td>{index + 1}</td><td className="name-col">{student.name}</td>
+          {Array.from({ length: days }, (_, dayIndex) => dayIndex + 1).map((day) => {
+            const shaded = isWeekend(profile.academicYear, month, day) || (month === 8 && augustFullyShaded);
+            return <td className={shaded ? "weekend-cell" : ""} key={day}></td>;
+          })}
+          <td></td>
+        </tr>)}</tbody>
+        <tfoot>
+          <tr><th colSpan={2}>مجموع الحضور اليومي</th>{Array.from({ length: days }, (_, day) => <th key={day}></th>)}<th></th></tr>
+          <tr><th colSpan={days + 2}>متابعة مدير المدرسة: ....................................................................</th><th>مجموع الحضور في الشهر</th></tr>
+          <tr><th colSpan={days + 2}>متوسط حضور الصف</th><th></th></tr>
+        </tfoot>
+      </table>
+      <div className="attendance-corner-meta"><span>{profile.schoolName || "اسم المدرسة"}</span><span>الصف: {className}</span><span>{monthName} {year}</span></div>
+    </article>
+  );
 }
 
-export function AttendanceSummaryPages({ profile, className, students, records }: { profile: Profile; className: string; students: PrintStudent[]; records: AttendanceRecord[] }) {
-  const groups = [ACADEMIC_MONTHS.slice(0, 5), ACADEMIC_MONTHS.slice(5)];
-  return <>{groups.map((months, groupIndex) => <article className="print-page" key={groupIndex}><PrintHeader profile={profile} title={groupIndex === 0 ? "ملخص الفصل الدراسي الأول" : "ملخص الفصل الدراسي الثاني والسنوي"} subtitle={className} /><table className="official-table summary-table"><thead><tr><th className="number-col">م</th><th className="name-col">اسم الطالب</th>{months.map((month) => <th colSpan={2} key={month.number}>{month.name}<br /><small>ح / غ</small></th>)}<th>مجموع<br />الحضور</th><th>مجموع<br />الغياب</th></tr></thead><tbody>{students.slice(0, 50).map((student, index) => {
-    let totalPresent = 0; let totalAbsent = 0;
-    const cells = months.map((month) => { const monthPrefix = `${monthYear(profile.academicYear, month.number)}-${String(month.number).padStart(2, "0")}`; const studentMonth = records.filter((record) => record.studentId === student.id && record.attendanceDate.startsWith(monthPrefix)); const present = studentMonth.filter((record) => record.status === "present").length; const absent = studentMonth.filter((record) => record.status === "absent").length; totalPresent += present; totalAbsent += absent; return [present, absent]; });
-    return <tr key={student.id}><td>{index + 1}</td><td className="name-col">{student.name}</td>{cells.flatMap(([present, absent], monthIndex) => [<td key={`${monthIndex}-p`}>{present || ""}</td>, <td key={`${monthIndex}-a`}>{absent || ""}</td>])}<td>{totalPresent || ""}</td><td>{totalAbsent || ""}</td></tr>;
-  })}</tbody></table><div className="summary-boxes"><div className="summary-box">عدد الطلاب<strong>{students.length}</strong></div><div className="summary-box">متابعة مربي الصف<strong>................</strong></div><div className="summary-box">متابعة المدير<strong>................</strong></div><div className="summary-box">ملاحظات<strong>................</strong></div></div></article>)}</>;
+export function AttendanceSummaryPages({ profile, teacherName, className, students, rowsCount }: { profile: Profile; teacherName: string; className: string; students: PrintStudent[]; rowsCount: number }) {
+  const rows = paddedStudents(students, rowsCount, `annual-${className}`);
+  const firstSemester = ACADEMIC_MONTHS.slice(0, 6);
+  const secondSemester = ACADEMIC_MONTHS.slice(6);
+  return <>
+    <article className="print-page register-page annual-summary-page">
+      <RegisterHeader profile={profile} />
+      <h1 className="register-title">الخلاصة السنوية للحضور والغياب</h1>
+      <div className="register-meta"><strong>الصف: {className}</strong><span /></div>
+      <table className="official-table annual-summary-table" style={rowStyle(rowsCount)}>
+        <thead>
+          <tr><th rowSpan={2} className="number-col">الرقم</th><th rowSpan={2} className="name-col">اسم الطالب</th>{ACADEMIC_MONTHS.map((month) => <th key={month.number}>{month.name}</th>)}<th colSpan={3}>مجموع الغياب</th><th rowSpan={2}>مجموع الحضور<br />من الدوام الكلي</th></tr>
+          <tr>{ACADEMIC_MONTHS.map((month) => <th key={month.number}>{month.number}</th>)}<th>ف 1</th><th>ف 2</th><th>1 + 2</th></tr>
+        </thead>
+        <tbody>{rows.map((student, index) => <tr key={student.id}><td>{index + 1}</td><td className="name-col">{student.name}</td>{Array.from({ length: 15 }, (_, cell) => <td key={cell}></td>)}</tr>)}</tbody>
+        <tfoot><tr><th colSpan={17}>متابعة مدير المدرسة: ....................................................................</th></tr></tfoot>
+      </table>
+    </article>
+
+    <article className="print-page register-page totals-summary-page">
+      <p className="basmala">بسم الله الرحمن الرحيم</p>
+      <h1 className="register-title">جدول الخلاصة</h1>
+      <SemesterSummaryTable title="الفصل الدراسي الأول" months={firstSemester} academicYear={profile.academicYear} />
+      <SemesterSummaryTable title="الفصل الدراسي الثاني" months={secondSemester} academicYear={profile.academicYear} />
+      <h2 className="annual-totals-title">الخلاصة السنوية للفصلين</h2>
+      <table className="official-table year-totals-table"><tbody>
+        <tr><th>الفصل الدراسي الأول</th>{Array.from({ length: 7 }, (_, index) => <td key={index}></td>)}</tr>
+        <tr><th>الفصل الدراسي الثاني</th>{Array.from({ length: 7 }, (_, index) => <td key={index}></td>)}</tr>
+        <tr><th>مجموع الفصلين</th>{Array.from({ length: 7 }, (_, index) => <td key={index}></td>)}</tr>
+      </tbody></table>
+      <div className="summary-signatures"><strong>مربي الصف: {teacherName}</strong><strong>مدير المدرسة: ............................</strong></div>
+    </article>
+  </>;
+}
+
+function SemesterSummaryTable({ title, months, academicYear }: { title: string; months: readonly { number: number; name: string }[]; academicYear: string }) {
+  return (
+    <table className="official-table semester-summary-table">
+      <thead><tr><th>الفصل</th><th>الشهر</th><th>عدد الاجتماعات</th><th>عدد الطلاب</th><th>مجموع الحضور لو لم يكن غياب</th><th>مجموع الحضور</th><th>متوسط الحضور</th><th>النسبة المئوية للحضور</th><th>متابعة مدير المدرسة</th></tr></thead>
+      <tbody>
+        {months.map((month, index) => <tr key={month.number}>{index === 0 ? <th rowSpan={months.length + 1}>{title}<br />{academicYear}</th> : null}<td>{month.name} ({month.number}) — {monthYear(academicYear, month.number)}</td>{Array.from({ length: 7 }, (_, cell) => <td key={cell}></td>)}</tr>)}
+        <tr><th>المجموع لـ{title}</th>{Array.from({ length: 7 }, (_, cell) => <td key={cell}></td>)}</tr>
+      </tbody>
+    </table>
+  );
 }
