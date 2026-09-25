@@ -204,6 +204,24 @@ export async function updateClassStageAction(formData: FormData) {
   revalidatePath("/attendance");
 }
 
+export async function deleteClassAction(formData: FormData) {
+  const user = await requireTeacher();
+  const classId = z.string().uuid().parse(formData.get("classId"));
+  const db = getDb();
+  const [owned] = await db
+    .select({ id: classes.id, name: classes.name })
+    .from(classes)
+    .where(and(eq(classes.id, classId), eq(classes.userId, user.id)))
+    .limit(1);
+  if (!owned) throw new Error("الصف غير موجود.");
+  await db.delete(classes).where(eq(classes.id, classId));
+  await writeAuditLog(user, "class_deleted", "حذف صف ودفاتره مرتبطة", { classId, className: owned.name });
+  revalidatePath("/setup");
+  revalidatePath("/gradebooks");
+  revalidatePath("/attendance");
+  revalidatePath("/dashboard");
+}
+
 export async function assignSubjectAction(formData: FormData) {
   const user = await requireTeacher();
   const classId = z.string().uuid().parse(formData.get("classId"));
