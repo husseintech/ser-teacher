@@ -257,6 +257,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .admin-check-list li + li { margin-top: 9px; }
 .admin-check-list li::marker { color: var(--green); }
 .danger-list li::marker { color: var(--red); }
+.class-stage-list { display: grid; gap: 8px; }
+.class-stage-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 11px; background: #f9fbfb; }
+.class-stage-item strong { color: var(--navy); }
+.class-stage-item span { color: var(--green-dark); font-size: .78rem; font-weight: 700; }
 
 @media (max-width: 1000px) {
   .landing { grid-template-columns: 1fr; background: #f7fafb; }
@@ -288,6 +292,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .card { border-radius: 14px; }
   .activity-item { grid-template-columns: 12px minmax(0, 1fr); }
   .activity-item time { grid-column: 2; }
+  .class-stage-item { align-items: flex-start; flex-direction: column; gap: 2px; }
 }
 
 @media (max-width: 480px) {

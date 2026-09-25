@@ -57,7 +57,7 @@ export default async function GradebooksPage() {
                 <label htmlFor="grade-stage">نوع دفتر العلامات</label>
                 <select className="select" id="grade-stage" name="stage" defaultValue={basicCount ? "basic" : "upper"}>
                   <option value="basic" disabled={!basicCount}>المرحلة الأساسية (1–4) — {basicCount} صف/مادة</option>
-                  <option value="upper" disabled={!upperCount}>الأساسي العليا (5–6) — {upperCount} صف/مادة</option>
+                  <option value="upper" disabled={!upperCount}>المرحلة من الخامس فما فوق — {upperCount} صف/مادة</option>
                 </select>
               </div>
               <div className="field">
@@ -72,7 +72,7 @@ export default async function GradebooksPage() {
               <div><span>اسم المعلم</span><strong>{user.fullName}</strong></div>
               <div><span>العام الدراسي</span><strong dir="ltr">{profile?.academicYear ?? "2026/2027"}</strong></div>
               <div><span>المرحلة الأساسية</span><strong>{basicCount * 2} صفحة</strong></div>
-              <div><span>الأساسي العليا</span><strong>{upperCount * 2} صفحة</strong></div>
+              <div><span>من الخامس فما فوق</span><strong>{upperCount * 2} صفحة</strong></div>
             </div>
 
             <div className="print-actions">
@@ -98,7 +98,7 @@ export default async function GradebooksPage() {
               <tbody>{assignments.map((assignment) => <tr key={assignment.id}>
                 <td>{assignment.className}</td>
                 <td>{assignment.subjectName}</td>
-                <td>{assignment.stage === "basic" ? "المرحلة الأساسية (1–4)" : "الأساسي العليا (5–6)"}</td>
+                <td>{assignment.stage === "basic" ? "المرحلة الأساسية (1–4)" : "المرحلة من الخامس فما فوق"}</td>
                 <td>صفحتان</td>
               </tr>)}</tbody>
             </table>

@@ -173,9 +173,17 @@ export async function addClassAction(formData: FormData) {
   const user = await requireTeacher();
   const name = z.string().trim().min(2).parse(formData.get("name"));
   const stage = z.enum(["basic", "upper"]).parse(formData.get("stage"));
-  await getDb().insert(classes).values({ userId: user.id, name, stage }).onConflictDoNothing();
-  await writeAuditLog(user, "class_added", "إضافة صف", { className: name, stage });
+  await getDb()
+    .insert(classes)
+    .values({ userId: user.id, name, stage })
+    .onConflictDoUpdate({
+      target: [classes.userId, classes.name],
+      set: { stage, updatedAt: new Date() },
+    });
+  await writeAuditLog(user, "class_saved", "حفظ الصف وتصنيفه", { className: name, stage });
   revalidatePath("/setup");
+  revalidatePath("/gradebooks");
+  revalidatePath("/attendance");
 }
 
 export async function assignSubjectAction(formData: FormData) {

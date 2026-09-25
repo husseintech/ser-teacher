@@ -66,11 +66,17 @@ export default async function SetupPage() {
             <div className="card-title"><h2>الصفوف التي أدرسها</h2><GraduationCap color="var(--green)" /></div>
             <form action={addClassAction} className="inline-form">
               <div className="field"><label htmlFor="className">اسم الصف والشعبة</label><input className="input" id="className" name="name" placeholder="الصف الرابع أ" required /></div>
-              <div className="field"><label htmlFor="stage">المرحلة</label><select className="select" id="stage" name="stage" defaultValue="basic"><option value="basic">الأساسية 1–4</option><option value="upper">العليا 5 فما فوق</option></select></div>
-              <button className="btn btn-primary" type="submit">إضافة الصف</button>
+              <div className="field"><label htmlFor="stage">نوع دفتر العلامات</label><select className="select" id="stage" name="stage" defaultValue="basic"><option value="basic">المرحلة الأساسية (1–4)</option><option value="upper">المرحلة من الخامس فما فوق</option></select></div>
+              <button className="btn btn-primary" type="submit">حفظ الصف</button>
             </form>
+            <p style={{ color: "var(--muted)", fontSize: ".82rem", margin: "10px 0 0" }}>إذا كان الصف موجودًا مسبقًا، فإن حفظ الاسم نفسه يحدّث نوع مرحلته بدل تجاهل الاختيار.</p>
             <div className="divider" />
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{classRows.length ? classRows.map((schoolClass) => <span className="badge badge-gold" key={schoolClass.id}>{schoolClass.name}</span>) : <span style={{ color: "var(--muted)" }}>لم تضف صفوفًا بعد.</span>}</div>
+            <div className="class-stage-list">{classRows.length ? classRows.map((schoolClass) => (
+              <div className="class-stage-item" key={schoolClass.id}>
+                <strong>{schoolClass.name}</strong>
+                <span>{schoolClass.stage === "basic" ? "المرحلة الأساسية (1–4)" : "المرحلة من الخامس فما فوق"}</span>
+              </div>
+            )) : <span style={{ color: "var(--muted)" }}>لم تضف صفوفًا بعد.</span>}</div>
           </div>
         </section>
 

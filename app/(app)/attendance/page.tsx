@@ -95,7 +95,7 @@ export default async function AttendancePage() {
           <div className="card-title"><h2>الصفوف الجاهزة للطباعة</h2></div>
           <div className="roster-grid">{classRows.map((schoolClass) => <div className="roster-card" key={schoolClass.id}>
             <h3>{schoolClass.name}</h3>
-            <p>{schoolClass.stage === "basic" ? "المرحلة الأساسية (1–4)" : "الأساسي العليا (5–6)"}</p>
+            <p>{schoolClass.stage === "basic" ? "المرحلة الأساسية (1–4)" : "المرحلة من الخامس فما فوق"}</p>
             <span className="badge">{schoolClass.studentCount} طالبًا</span>
           </div>)}</div>
         </section>
