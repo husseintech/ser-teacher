@@ -74,8 +74,22 @@
 .grade-register-table tbody tr { height: calc(232mm / var(--rows-count)); }
 .grade-register-table tbody td { height: calc(232mm / var(--rows-count)); font-size: 7.5pt; padding: .25mm .7mm; }
 .grade-register-table .term-average { width: 24mm; }
-.upper-grade-table .name-col { width: 45mm; }
-.upper-grade-table th { font-size: 6.7pt; }
+.upper-grade-table .name-col { width: 54mm; }
+.upper-grade-table thead { height: 19mm; }
+.upper-grade-table thead th {
+  font-size: 7pt;
+  background: #bfe3f0;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+.upper-grade-table .weight-row { height: 6mm; }
+.upper-grade-table .weight-row th {
+  padding: .45mm;
+  background: #fff77a;
+  font-size: 7.2pt;
+}
+.upper-grade-table .semester-total-head { width: 22mm; }
+.upper-grade-table .completion-head { width: 16mm; }
 
 .student-status-page .register-title { margin-bottom: 2mm; }
 .student-status-table { font-size: 4.9pt; }

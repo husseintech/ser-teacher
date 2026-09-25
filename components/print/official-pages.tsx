@@ -71,12 +71,15 @@ export function GradebookPages({ profile, teacherName, className, subjectName, s
             <tr>
               <th rowSpan={2} className="number-col">الرقم</th>
               <th rowSpan={2} className="name-col">اسم الطالب</th>
-              <th colSpan={4}>أعمال الفصل (60)</th>
-              <th rowSpan={2}>الامتحان النهائي<br />40</th>
-              <th rowSpan={2}>مجموع الفصل<br />100</th>
-              {termIndex === 1 ? <th rowSpan={2}>علامة<br />الإكمال</th> : null}
+              <th>اختبار<br />قصير 1</th>
+              <th>اختبار<br />نصف الفصل</th>
+              <th>اختبار<br />قصير 2</th>
+              <th>التقويم<br />النوعي</th>
+              <th>اختبار<br />نهاية الفصل</th>
+              <th rowSpan={2} className="semester-total-head">مجموع علامات<br />{term.name.replace("الدراسي ", "")}</th>
+              {termIndex === 1 ? <th rowSpan={2} className="completion-head">علامة<br />الإكمال</th> : null}
             </tr>
-            <tr><th>مشاركة<br />10</th><th>اختبار أول<br />20</th><th>أنشطة<br />10</th><th>اختبار ثانٍ<br />20</th></tr>
+            <tr className="weight-row"><th>10%</th><th>20%</th><th>10%</th><th>20%</th><th>40%</th></tr>
           </thead>
           <tbody>{rows.map((student, index) => <tr key={student.id}><td>{index + 1}</td><td className="name-col">{student.name}</td>{Array.from({ length: termIndex === 1 ? 7 : 6 }, (_, cell) => <td key={cell}></td>)}</tr>)}</tbody>
         </table>
