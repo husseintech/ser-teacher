@@ -1,0 +1,65 @@
+.print-root { min-height: 100vh; padding: 20px; background: #dfe4e7; color: #000; font-family: Tahoma, Arial, sans-serif; }
+.print-toolbar { width: 210mm; max-width: 100%; margin: 0 auto 14px; padding: 10px; border-radius: 12px; background: #fff; display: flex; gap: 9px; justify-content: center; box-shadow: 0 7px 24px rgba(0,0,0,.09); }
+.print-page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto 18px;
+  padding: 10mm 9mm;
+  background: #fff;
+  page-break-after: always;
+  position: relative;
+  box-shadow: 0 7px 25px rgba(0,0,0,.12);
+  overflow: hidden;
+}
+.print-page:last-child { page-break-after: auto; }
+.print-cover { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 14mm 20mm; }
+.print-emblem { width: 42mm; height: 57mm; object-fit: contain; margin-bottom: 4mm; }
+.print-country { font-size: 18pt; font-weight: 800; margin: 0; }
+.print-ministry, .print-directorate { font-size: 14pt; font-weight: 700; margin: 1mm 0; }
+.print-cover-rule { width: 100%; border-top: 2px solid #000; margin: 7mm 0 10mm; }
+.print-book-title { border: 3px double #000; padding: 7mm 18mm; min-width: 125mm; font-size: 25pt; font-weight: 800; margin: 0 0 14mm; }
+.print-details { width: 100%; border-collapse: collapse; font-size: 13pt; text-align: right; }
+.print-details th, .print-details td { border: 1.5px solid #000; padding: 4mm; }
+.print-details th { width: 42mm; background: #f3f3f3; }
+.print-year { margin-top: auto; font-size: 14pt; font-weight: 800; padding-top: 12mm; }
+.print-header { text-align: center; margin-bottom: 4mm; }
+.print-header h1 { font-size: 15pt; margin: 0; }
+.print-header p { margin: .5mm 0; font-size: 9.5pt; }
+.print-header-line { border-top: 1.5px solid #000; margin-top: 3mm; }
+.official-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8.5pt; line-height: 1.25; }
+.official-table th, .official-table td { border: 1px solid #000; padding: 1.4mm 1mm; text-align: center; height: 8mm; overflow: hidden; }
+.official-table th { font-weight: 800; background: #efefef; }
+.official-table .name-col { width: 43mm; text-align: right; padding-right: 2mm; }
+.official-table .number-col { width: 8mm; }
+.official-table .notes-col { width: 31mm; text-align: right; }
+.official-table .total-col { width: 13mm; font-weight: 800; }
+.print-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 30mm; text-align: center; margin-top: 7mm; font-size: 10pt; }
+.page-number { position: absolute; bottom: 5mm; left: 0; right: 0; text-align: center; font-size: 8pt; }
+.attendance-print { font-size: 6.6pt; }
+.attendance-print th, .attendance-print td { padding: .6mm .2mm; height: 6.2mm; }
+.attendance-print .name-col { width: 34mm; font-size: 6.8pt; }
+.attendance-print .number-col { width: 6mm; }
+.attendance-print .day-col { width: auto; }
+.attendance-print .weekend-cell { background: #cfcfcf; }
+.attendance-day-head { writing-mode: vertical-rl; transform: rotate(180deg); height: 18mm !important; font-size: 6pt; }
+.summary-table { font-size: 8pt; }
+.summary-table th, .summary-table td { height: 7.5mm; padding: 1mm; }
+.summary-boxes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin-top: 6mm; }
+.summary-box { border: 1px solid #000; min-height: 22mm; padding: 2mm; text-align: center; font-size: 8pt; }
+.summary-box strong { display: block; font-size: 12pt; }
+.student-status-table .status-col { width: 22mm; }
+.student-status-table .date-col { width: 25mm; }
+
+@page { size: A4 portrait; margin: 0; }
+
+@media print {
+  html, body { width: 210mm; background: #fff !important; }
+  .print-root { padding: 0; background: #fff; }
+  .print-toolbar { display: none !important; }
+  .print-page { margin: 0; box-shadow: none; }
+}
+
+@media screen and (max-width: 860px) {
+  .print-root { padding: 8px; overflow: auto; }
+  .print-page { transform-origin: top right; }
+}
