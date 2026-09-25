@@ -1,6 +1,8 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "./schema";
+
+let client: ReturnType<typeof postgres> | undefined;
 
 function connectionString() {
   const url = process.env.DATABASE_URL;
@@ -11,7 +13,13 @@ function connectionString() {
 }
 
 export function getDb() {
-  const client = neon(connectionString());
+  client ??= postgres(connectionString(), {
+    max: 1,
+    prepare: false,
+    ssl: "require",
+    idle_timeout: 20,
+    connect_timeout: 15,
+  });
   return drizzle(client, { schema });
 }
 

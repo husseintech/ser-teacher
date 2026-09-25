@@ -1,6 +1,7 @@
 import {
   boolean,
   date,
+  index,
   integer,
   numeric,
   pgTable,
@@ -31,14 +32,18 @@ export const users = pgTable(
   (table) => [uniqueIndex("users_email_unique").on(table.email)],
 );
 
-export const sessions = pgTable("sessions", {
-  tokenHash: text("token_hash").primaryKey(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const sessions = pgTable(
+  "sessions",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("sessions_user_id_idx").on(table.userId)],
+);
 
 export const teacherProfiles = pgTable("teacher_profiles", {
   userId: uuid("user_id")
@@ -94,6 +99,8 @@ export const teachingAssignments = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    index("assignments_class_id_idx").on(table.classId),
+    index("assignments_subject_id_idx").on(table.subjectId),
     uniqueIndex("assignments_user_class_subject_unique").on(
       table.userId,
       table.classId,
@@ -118,7 +125,10 @@ export const students = pgTable(
     active: boolean("active").notNull().default(true),
     ...timestamps,
   },
-  (table) => [uniqueIndex("students_class_name_unique").on(table.classId, table.name)],
+  (table) => [
+    index("students_user_id_idx").on(table.userId),
+    uniqueIndex("students_class_name_unique").on(table.classId, table.name),
+  ],
 );
 
 export const gradebooks = pgTable(
@@ -139,6 +149,8 @@ export const gradebooks = pgTable(
     ...timestamps,
   },
   (table) => [
+    index("gradebooks_class_id_idx").on(table.classId),
+    index("gradebooks_subject_id_idx").on(table.subjectId),
     uniqueIndex("gradebooks_owner_class_subject_year_unique").on(
       table.userId,
       table.classId,
@@ -166,7 +178,10 @@ export const gradeRecords = pgTable(
     notes: text("notes").notNull().default(""),
     ...timestamps,
   },
-  (table) => [uniqueIndex("grade_records_book_student_unique").on(table.gradebookId, table.studentId)],
+  (table) => [
+    index("grade_records_student_id_idx").on(table.studentId),
+    uniqueIndex("grade_records_book_student_unique").on(table.gradebookId, table.studentId),
+  ],
 );
 
 export const attendanceBooks = pgTable(
@@ -185,6 +200,7 @@ export const attendanceBooks = pgTable(
     ...timestamps,
   },
   (table) => [
+    index("attendance_books_class_id_idx").on(table.classId),
     uniqueIndex("attendance_books_owner_class_year_unique").on(
       table.userId,
       table.classId,
@@ -208,6 +224,7 @@ export const attendanceRecords = pgTable(
     ...timestamps,
   },
   (table) => [
+    index("attendance_records_student_id_idx").on(table.studentId),
     uniqueIndex("attendance_records_book_student_date_unique").on(
       table.attendanceBookId,
       table.studentId,

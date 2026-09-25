@@ -138,3 +138,25 @@ CREATE UNIQUE INDEX "students_class_name_unique" ON "students" USING btree ("cla
 CREATE UNIQUE INDEX "subjects_user_name_unique" ON "subjects" USING btree ("user_id","name");--> statement-breakpoint
 CREATE UNIQUE INDEX "assignments_user_class_subject_unique" ON "teaching_assignments" USING btree ("user_id","class_id","subject_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "users_email_unique" ON "users" USING btree ("email");
+--> statement-breakpoint
+ALTER TABLE "users" ENABLE ROW LEVEL SECURITY;
+--> statement-breakpoint
+ALTER TABLE "sessions" ENABLE ROW LEVEL SECURITY;
+--> statement-breakpoint
+ALTER TABLE "teacher_profiles" ENABLE ROW LEVEL SECURITY;
+--> statement-breakpoint
+ALTER TABLE "subjects" ENABLE ROW LEVEL SECURITY;
+--> statement-breakpoint
+ALTER TABLE "classes" ENABLE ROW LEVEL SECURITY;
+--> statement-breakpoint
+ALTER TABLE "teaching_assignments" ENABLE ROW LEVEL SECURITY;
+--> statement-breakpoint
+ALTER TABLE "students" ENABLE ROW LEVEL SECURITY;
+--> statement-breakpoint
+ALTER TABLE "gradebooks" ENABLE ROW LEVEL SECURITY;
+--> statement-breakpoint
+ALTER TABLE "grade_records" ENABLE ROW LEVEL SECURITY;
+--> statement-breakpoint
+ALTER TABLE "attendance_books" ENABLE ROW LEVEL SECURITY;
+--> statement-breakpoint
+ALTER TABLE "attendance_records" ENABLE ROW LEVEL SECURITY;
