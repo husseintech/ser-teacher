@@ -3,12 +3,12 @@ import { ArrowLeft, BookOpenCheck, CalendarCheck2, GraduationCap, Settings2, Use
 import Link from "next/link";
 import { getDb } from "@/db";
 import { classes, students, subjects, teacherProfiles, teachingAssignments } from "@/db/schema";
-import { requireUser } from "@/lib/auth";
+import { requireTeacher } from "@/lib/auth";
 
 export const metadata = { title: "لوحة المعلم" };
 
 export default async function DashboardPage() {
-  const user = await requireUser();
+  const user = await requireTeacher();
   const db = getDb();
   const [[profile], [classCount], [subjectCount], [studentCount], [assignmentCount]] = await Promise.all([
     db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, user.id)).limit(1),

@@ -2,12 +2,12 @@ import { asc, eq } from "drizzle-orm";
 import { BookOpenCheck, Printer } from "lucide-react";
 import { getDb } from "@/db";
 import { classes, subjects, teacherProfiles, teachingAssignments } from "@/db/schema";
-import { requireUser } from "@/lib/auth";
+import { requireTeacher } from "@/lib/auth";
 
 export const metadata = { title: "دفتر العلامات" };
 
 export default async function GradebooksPage() {
-  const user = await requireUser();
+  const user = await requireTeacher();
   const db = getDb();
   const [assignments, [profile]] = await Promise.all([
     db

@@ -10,7 +10,8 @@ import {
 } from "@/components/print/official-pages";
 import { getDb } from "@/db";
 import { classes, students, subjects, teacherProfiles, teachingAssignments } from "@/db/schema";
-import { requireUser } from "@/lib/auth";
+import { writeAuditLog } from "@/lib/audit";
+import { requireTeacher } from "@/lib/auth";
 import { ACADEMIC_MONTHS } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +31,7 @@ export default async function PrintPage({
   params: Promise<{ type: string; id: string; section: string }>;
   searchParams: Promise<PrintQuery>;
 }) {
-  const user = await requireUser();
+  const user = await requireTeacher();
   const { type, id, section } = await params;
   const query = await searchParams;
   const db = getDb();
@@ -142,6 +143,8 @@ export default async function PrintPage({
   } else {
     notFound();
   }
+
+  await writeAuditLog(user, "print_opened", "فتح نموذج للطباعة", { type, section });
 
   return <main className="print-root"><PrintToolbar />{content}</main>;
 }

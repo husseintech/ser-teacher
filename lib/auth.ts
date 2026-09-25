@@ -60,3 +60,15 @@ export async function requireUser() {
   if (!user) redirect("/login");
   return user;
 }
+
+export async function requireTeacher() {
+  const user = await requireUser();
+  if (user.role === "admin") redirect("/admin");
+  return user;
+}
+
+export async function requireAdmin() {
+  const user = await requireUser();
+  if (user.role !== "admin") redirect("/dashboard");
+  return user;
+}

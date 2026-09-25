@@ -15,6 +15,27 @@
       "when": 1790346443868,
       "tag": "0001_mean_thunderbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790366778313,
+      "tag": "0002_abnormal_guardsmen",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790366805890,
+      "tag": "0003_sticky_terrax",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790366821246,
+      "tag": "0004_wooden_franklin_storm",
+      "breakpoints": true
     }
   ]
 }

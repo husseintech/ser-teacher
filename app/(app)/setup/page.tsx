@@ -3,12 +3,12 @@ import { BookPlus, GraduationCap, Link2, Save, Users } from "lucide-react";
 import { addClassAction, addSubjectAction, assignSubjectAction, saveProfileAction, syncRosterAction } from "@/app/actions";
 import { getDb } from "@/db";
 import { classes, students, subjects, teacherProfiles, teachingAssignments } from "@/db/schema";
-import { requireUser } from "@/lib/auth";
+import { requireTeacher } from "@/lib/auth";
 
 export const metadata = { title: "بياناتي وصفوفي" };
 
 export default async function SetupPage() {
-  const user = await requireUser();
+  const user = await requireTeacher();
   const db = getDb();
   const [[profile], subjectRows, classRows, assignmentRows, studentRows] = await Promise.all([
     db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, user.id)).limit(1),

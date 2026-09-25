@@ -2,12 +2,12 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { CalendarCheck2, Printer } from "lucide-react";
 import { getDb } from "@/db";
 import { classes, students, teacherProfiles } from "@/db/schema";
-import { requireUser } from "@/lib/auth";
+import { requireTeacher } from "@/lib/auth";
 
 export const metadata = { title: "الحضور والغياب" };
 
 export default async function AttendancePage() {
-  const user = await requireUser();
+  const user = await requireTeacher();
   const db = getDb();
   const [classRows, [profile]] = await Promise.all([
     db

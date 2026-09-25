@@ -1,8 +1,11 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   date,
   index,
   integer,
+  jsonb,
   numeric,
   pgTable,
   text,
@@ -27,10 +30,33 @@ export const users = pgTable(
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     verificationCodeHash: text("verification_code_hash"),
     verificationExpiresAt: timestamp("verification_expires_at", { withTimezone: true }),
+    role: text("role").notNull().default("teacher"),
+    lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     ...timestamps,
   },
-  (table) => [uniqueIndex("users_email_unique").on(table.email)],
+  (table) => [
+    uniqueIndex("users_email_unique").on(table.email),
+    check("users_role_check", sql`${table.role} in ('teacher', 'admin')`),
+  ],
 );
+
+export const auditLogs = pgTable(
+  "audit_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    actorName: text("actor_name").notNull(),
+    actorEmail: text("actor_email").notNull(),
+    eventType: text("event_type").notNull(),
+    eventLabel: text("event_label").notNull(),
+    metadata: jsonb("metadata").$type<Record<string, string | number | boolean | null>>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("audit_logs_user_id_idx").on(table.userId),
+    index("audit_logs_created_at_idx").on(table.createdAt),
+  ],
+).enableRLS();
 
 export const sessions = pgTable(
   "sessions",

@@ -7,7 +7,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getDb } from "@/db";
 import { classes, students, subjects, teacherProfiles, teachingAssignments, users } from "@/db/schema";
-import { createSession, deleteSession, requireUser } from "@/lib/auth";
+import { writeAuditLog } from "@/lib/audit";
+import { createSession, deleteSession, requireTeacher } from "@/lib/auth";
 import type { ActionState } from "@/lib/action-state";
 import { sendVerificationEmail } from "@/lib/email";
 
@@ -69,6 +70,11 @@ export async function registerAction(_: ActionState, formData: FormData): Promis
 
     if (!userId) throw new Error("تعذر إنشاء الحساب.");
     await sendVerificationEmail(email, fullName);
+    await writeAuditLog(
+      { id: userId, fullName, email },
+      "account_registered",
+      "إنشاء حساب معلم",
+    );
     return {
       ok: true,
       message: "أرسلنا رابط التأكيد إلى بريدك الإلكتروني.",
@@ -99,6 +105,7 @@ export async function resendCodeAction(_: ActionState, formData: FormData): Prom
 
 export async function loginAction(_: ActionState, formData: FormData): Promise<ActionState> {
   let userId: string | null = null;
+  let destination = "/dashboard";
   try {
     const email = emailSchema.parse(formData.get("email"));
     const password = z.string().min(1, "أدخل كلمة المرور.").parse(formData.get("password"));
@@ -111,6 +118,13 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
       return { ok: false, message: "يجب تأكيد البريد الإلكتروني أولًا.", email };
     }
     userId = user.id;
+    destination = user.role === "admin" ? "/admin" : "/dashboard";
+    await db.update(users).set({ lastLoginAt: new Date(), updatedAt: new Date() }).where(eq(users.id, user.id));
+    await writeAuditLog(
+      user,
+      user.role === "admin" ? "admin_login" : "teacher_login",
+      user.role === "admin" ? "تسجيل دخول المدير" : "تسجيل دخول معلم",
+    );
   } catch (error) {
     if (error instanceof z.ZodError) return { ok: false, message: error.issues[0]?.message ?? "تحقق من البيانات." };
     return { ok: false, message: messageFrom(error) };
@@ -118,7 +132,7 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
 
   if (!userId) return { ok: false, message: "تعذر تسجيل الدخول." };
   await createSession(userId);
-  redirect("/dashboard");
+  redirect(destination);
 }
 
 export async function logoutAction() {
@@ -127,7 +141,7 @@ export async function logoutAction() {
 }
 
 export async function saveProfileAction(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireTeacher();
   const schoolName = z.string().trim().min(2).parse(formData.get("schoolName"));
   const schoolNationalId = z.string().trim().min(2).parse(formData.get("schoolNationalId"));
   const directorate = z.string().trim().min(2).parse(formData.get("directorate"));
@@ -142,27 +156,30 @@ export async function saveProfileAction(formData: FormData) {
       target: teacherProfiles.userId,
       set: { schoolName, schoolNationalId, directorate, academicYear, updatedAt: new Date() },
     });
+  await writeAuditLog(user, "profile_updated", "تحديث بيانات المدرسة", { schoolName, academicYear });
   revalidatePath("/setup");
   revalidatePath("/dashboard");
 }
 
 export async function addSubjectAction(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireTeacher();
   const name = z.string().trim().min(2).parse(formData.get("name"));
   await getDb().insert(subjects).values({ userId: user.id, name }).onConflictDoNothing();
+  await writeAuditLog(user, "subject_added", "إضافة مادة", { subject: name });
   revalidatePath("/setup");
 }
 
 export async function addClassAction(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireTeacher();
   const name = z.string().trim().min(2).parse(formData.get("name"));
   const stage = z.enum(["basic", "upper"]).parse(formData.get("stage"));
   await getDb().insert(classes).values({ userId: user.id, name, stage }).onConflictDoNothing();
+  await writeAuditLog(user, "class_added", "إضافة صف", { className: name, stage });
   revalidatePath("/setup");
 }
 
 export async function assignSubjectAction(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireTeacher();
   const classId = z.string().uuid().parse(formData.get("classId"));
   const subjectId = z.string().uuid().parse(formData.get("subjectId"));
   const db = getDb();
@@ -172,12 +189,13 @@ export async function assignSubjectAction(formData: FormData) {
   ]);
   if (!ownedClass[0] || !ownedSubject[0]) throw new Error("الصف أو المادة غير متاحين.");
   await db.insert(teachingAssignments).values({ userId: user.id, classId, subjectId }).onConflictDoNothing();
+  await writeAuditLog(user, "subject_assigned", "ربط مادة بصف", { classId, subjectId });
   revalidatePath("/setup");
   revalidatePath("/gradebooks");
 }
 
 export async function syncRosterAction(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireTeacher();
   const classId = z.string().uuid().parse(formData.get("classId"));
   const rawNames = z.string().parse(formData.get("names"));
   const names = [...new Set(rawNames.split(/\r?\n/).map((name) => name.trim()).filter(Boolean))];
@@ -201,15 +219,17 @@ export async function syncRosterAction(formData: FormData) {
         set: { position: index + 1, active: true, updatedAt: new Date() },
       });
   }
+  await writeAuditLog(user, "roster_updated", "تحديث قائمة الطلاب", { classId, studentsCount: names.length });
   revalidatePath("/setup");
   revalidatePath("/gradebooks");
   revalidatePath("/attendance");
 }
 
 export async function updateStudentStatusAction(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireTeacher();
   const studentId = z.string().uuid().parse(formData.get("studentId"));
   const status = z.enum(["منتظم", "منقول", "منقطع", "موقوف"]).parse(formData.get("status"));
   await getDb().update(students).set({ status, updatedAt: new Date() }).where(and(eq(students.id, studentId), eq(students.userId, user.id)));
+  await writeAuditLog(user, "student_status_updated", "تحديث حالة طالب", { studentId, status });
   revalidatePath("/setup");
 }
