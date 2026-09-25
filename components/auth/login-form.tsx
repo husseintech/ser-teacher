@@ -17,7 +17,7 @@ export function LoginForm() {
         <label htmlFor="password">كلمة المرور</label>
         <input className="input" id="password" name="password" type="password" autoComplete="current-password" required />
       </div>
-      {state.message && <div className="alert alert-error" role="alert">{state.message}{state.email && <> <Link href={`/verify?email=${encodeURIComponent(state.email)}`}>تأكيد البريد</Link></>}</div>}
+      {state.message && <div className="alert alert-error" role="alert">{state.message}{state.email && <> <Link href={`/verify?email=${encodeURIComponent(state.email)}`}>إرسال رابط التأكيد</Link></>}</div>}
       <button className="btn btn-primary" disabled={pending} type="submit">{pending ? "جارٍ الدخول..." : "تسجيل الدخول"}</button>
     </form>
   );

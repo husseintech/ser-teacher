@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "bcryptjs": "3.0.3",
+    "@supabase/supabase-js": "2.117.2",
     "drizzle-orm": "0.45.3",
     "jose": "6.2.12",
     "lucide-react": "0.544.0",
@@ -20,7 +21,6 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "postgres": "3.4.9",
-    "resend": "6.29.0",
     "zod": "4.1.11"
   },
   "devDependencies": {

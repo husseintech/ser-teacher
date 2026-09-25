@@ -1,46 +1,36 @@
 import "server-only";
 
-import { Resend } from "resend";
+import { createClient } from "@supabase/supabase-js";
 
-export async function sendVerificationEmail(email: string, fullName: string, code: string) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM;
-
-  if (!apiKey || !from) {
-    if (process.env.DEV_SHOW_VERIFICATION_CODE === "true" && process.env.NODE_ENV !== "production") {
-      return { delivered: false, developmentCode: code };
-    }
-    throw new Error("خدمة إرسال البريد غير مهيأة بعد. أضف بيانات البريد في إعدادات الموقع.");
-  }
-
-  const resend = new Resend(apiKey);
-  const { error } = await resend.emails.send({
-    from,
-    to: email,
-    subject: "رمز تأكيد حسابك في خدمات معلمين",
-    html: `
-      <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;max-width:560px;margin:auto;color:#173042">
-        <h2>مرحبًا ${escapeHtml(fullName)}</h2>
-        <p>رمز تأكيد بريدك الإلكتروني في منصة <strong>خدمات معلمين</strong> هو:</p>
-        <div style="font-size:34px;letter-spacing:8px;font-weight:700;text-align:center;padding:20px;background:#f1f5f7;border-radius:12px">${code}</div>
-        <p>الرمز صالح لمدة 10 دقائق. إذا لم تطلب إنشاء الحساب فتجاهل هذه الرسالة.</p>
-      </div>
-    `,
-  });
-
-  if (error) throw new Error("تعذر إرسال رمز التأكيد. تحقق من إعدادات البريد وحاول مجددًا.");
-  return { delivered: true, developmentCode: null };
+function authClient() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) throw new Error("خدمة تأكيد البريد غير مهيأة بعد.");
+  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 
-function escapeHtml(value: string) {
-  return value.replace(/[&<>'"]/g, (char) => {
-    const entities: Record<string, string> = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      "'": "&#39;",
-      '"': "&quot;",
-    };
-    return entities[char];
+function siteUrl() {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:3000";
+}
+
+export async function sendVerificationEmail(email: string, fullName: string) {
+  const { error } = await authClient().auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: true,
+      data: { full_name: fullName },
+      emailRedirectTo: `${siteUrl()}/auth/callback`,
+    },
   });
+  if (error) throw new Error(error.message.includes("rate") ? "يرجى الانتظار قليلًا قبل طلب رابط جديد." : "تعذر إرسال رابط التأكيد. تحقق من البريد وحاول مجددًا.");
+  return { delivered: true };
+}
+
+export async function verifiedEmailFromToken(accessToken: string) {
+  const { data, error } = await authClient().auth.getUser(accessToken);
+  if (error || !data.user?.email) throw new Error("رابط التأكيد غير صالح أو انتهت صلاحيته.");
+  return data.user.email.toLowerCase();
 }

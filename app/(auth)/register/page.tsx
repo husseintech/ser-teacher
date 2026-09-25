@@ -8,7 +8,7 @@ export default function RegisterPage() {
     <>
       <section className="auth-card">
         <h1>إنشاء حساب معلم</h1>
-        <p className="lead">أدخل بياناتك الأساسية، ثم أكد بريدك بالرمز الذي سيصلك.</p>
+        <p className="lead">أدخل بياناتك الأساسية، ثم أكد بريدك من خلال الرابط الذي سيصلك.</p>
         <RegisterForm />
       </section>
       <p className="auth-footer">لديك حساب؟ <Link href="/login">سجّل الدخول</Link></p>

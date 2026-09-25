@@ -1,6 +1,5 @@
 "use server";
 
-import { randomInt } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -19,7 +18,7 @@ import {
   teachingAssignments,
   users,
 } from "@/db/schema";
-import { createSession, deleteSession, requireUser, verificationHash } from "@/lib/auth";
+import { createSession, deleteSession, requireUser } from "@/lib/auth";
 import type { ActionState } from "@/lib/action-state";
 import { sendVerificationEmail } from "@/lib/email";
 
@@ -55,10 +54,7 @@ export async function registerAction(_: ActionState, formData: FormData): Promis
       return { ok: false, message: "هذا البريد مسجل مسبقًا. يمكنك تسجيل الدخول مباشرة." };
     }
 
-    const code = String(randomInt(100000, 1000000));
     const passwordHash = await bcrypt.hash(password, 12);
-    const verificationCodeHash = verificationHash(email, code);
-    const verificationExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
     let userId = existing?.id;
 
     if (existing) {
@@ -68,27 +64,26 @@ export async function registerAction(_: ActionState, formData: FormData): Promis
           fullName,
           birthDate,
           passwordHash,
-          verificationCodeHash,
-          verificationExpiresAt,
+          verificationCodeHash: null,
+          verificationExpiresAt: null,
           updatedAt: new Date(),
         })
         .where(eq(users.id, existing.id));
     } else {
       const [created] = await db
         .insert(users)
-        .values({ fullName, email, birthDate, passwordHash, verificationCodeHash, verificationExpiresAt })
+        .values({ fullName, email, birthDate, passwordHash })
         .returning({ id: users.id });
       userId = created.id;
       await db.insert(teacherProfiles).values({ userId }).onConflictDoNothing();
     }
 
     if (!userId) throw new Error("تعذر إنشاء الحساب.");
-    const delivery = await sendVerificationEmail(email, fullName, code);
+    await sendVerificationEmail(email, fullName);
     return {
       ok: true,
-      message: "أرسلنا رمز التأكيد إلى بريدك الإلكتروني.",
+      message: "أرسلنا رابط التأكيد إلى بريدك الإلكتروني.",
       email,
-      developmentCode: delivery.developmentCode,
     };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -96,40 +91,6 @@ export async function registerAction(_: ActionState, formData: FormData): Promis
     }
     return { ok: false, message: messageFrom(error) };
   }
-}
-
-export async function verifyEmailAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  let verifiedUserId: string | null = null;
-  try {
-    const email = emailSchema.parse(formData.get("email"));
-    const code = z.string().trim().regex(/^\d{6}$/, "أدخل رمز التأكيد المكوّن من 6 أرقام.").parse(formData.get("code"));
-    const db = getDb();
-    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    if (!user) return { ok: false, message: "لا يوجد طلب تسجيل لهذا البريد." };
-    if (user.emailVerifiedAt) {
-      verifiedUserId = user.id;
-    } else if (
-      !user.verificationCodeHash ||
-      !user.verificationExpiresAt ||
-      user.verificationExpiresAt.getTime() < Date.now() ||
-      user.verificationCodeHash !== verificationHash(email, code)
-    ) {
-      return { ok: false, message: "الرمز غير صحيح أو انتهت صلاحيته." };
-    } else {
-      await db
-        .update(users)
-        .set({ emailVerifiedAt: new Date(), verificationCodeHash: null, verificationExpiresAt: null, updatedAt: new Date() })
-        .where(eq(users.id, user.id));
-      verifiedUserId = user.id;
-    }
-  } catch (error) {
-    if (error instanceof z.ZodError) return { ok: false, message: error.issues[0]?.message ?? "تحقق من الرمز." };
-    return { ok: false, message: messageFrom(error) };
-  }
-
-  if (!verifiedUserId) return { ok: false, message: "تعذر تأكيد الحساب." };
-  await createSession(verifiedUserId);
-  redirect("/dashboard");
 }
 
 export async function resendCodeAction(_: ActionState, formData: FormData): Promise<ActionState> {
@@ -140,17 +101,8 @@ export async function resendCodeAction(_: ActionState, formData: FormData): Prom
     if (!user) return { ok: false, message: "لا يوجد طلب تسجيل لهذا البريد." };
     if (user.emailVerifiedAt) return { ok: false, message: "البريد مؤكد بالفعل. يمكنك تسجيل الدخول." };
 
-    const code = String(randomInt(100000, 1000000));
-    await db
-      .update(users)
-      .set({
-        verificationCodeHash: verificationHash(email, code),
-        verificationExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, user.id));
-    const delivery = await sendVerificationEmail(email, user.fullName, code);
-    return { ok: true, message: "تم إرسال رمز جديد.", email, developmentCode: delivery.developmentCode };
+    await sendVerificationEmail(email, user.fullName);
+    return { ok: true, message: "تم إرسال رابط تأكيد جديد.", email };
   } catch (error) {
     return { ok: false, message: messageFrom(error) };
   }

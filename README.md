@@ -4,7 +4,7 @@
 
 ## التشغيل المحلي
 
-1. انسخ `.env.example` إلى `.env.local` وأضف اتصال Supabase وخدمة Resend.
+1. انسخ `.env.example` إلى `.env.local` وأضف اتصال Supabase ومفتاحه القابل للنشر.
 2. ثبّت الحزم: `npm install`
 3. طبّق قاعدة البيانات: `npm run db:migrate`
 4. شغّل الموقع: `npm run dev`

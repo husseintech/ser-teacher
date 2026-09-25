@@ -12,7 +12,6 @@ export function RegisterForm() {
   useEffect(() => {
     if (!state.ok || !state.email) return;
     const params = new URLSearchParams({ email: state.email });
-    if (state.developmentCode) params.set("dev", state.developmentCode);
     router.push(`/verify?${params.toString()}`);
   }, [router, state]);
 
@@ -44,7 +43,7 @@ export function RegisterForm() {
         </div>
       </div>
       {state.message && <div className={`alert ${state.ok ? "alert-success" : "alert-error"}`} role="status">{state.message}</div>}
-      <button className="btn btn-primary" disabled={pending} type="submit">{pending ? "جارٍ إنشاء الحساب..." : "إنشاء الحساب وإرسال الرمز"}</button>
+      <button className="btn btn-primary" disabled={pending} type="submit">{pending ? "جارٍ إنشاء الحساب..." : "إنشاء الحساب وإرسال رابط التأكيد"}</button>
     </form>
   );
 }
