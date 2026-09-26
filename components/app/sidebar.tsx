@@ -3,6 +3,7 @@
 import { BookOpenCheck, CalendarCheck2, Home, LogOut, Menu, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { logoutAction } from "@/app/actions";
 import { Brand } from "@/components/brand";
 
@@ -15,9 +16,17 @@ const navigation = [
 
 export function AppNavigation({ fullName, email }: { fullName: string; email: string }) {
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <>
-      <input className="mobile-menu" id="mobile-menu" type="checkbox" />
+      <input
+        checked={menuOpen}
+        className="mobile-menu"
+        id="mobile-menu"
+        onChange={(event) => setMenuOpen(event.target.checked)}
+        type="checkbox"
+      />
       <header className="mobile-header">
         <strong>خدمات معلمين</strong>
         <label className="menu-button" htmlFor="mobile-menu" aria-label="فتح القائمة"><Menu size={23} /></label>
@@ -27,7 +36,7 @@ export function AppNavigation({ fullName, email }: { fullName: string; email: st
         <nav className="nav-list" aria-label="القائمة الرئيسية">
           {navigation.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`));
-            return <Link className={`nav-link${active ? " active" : ""}`} href={href} key={href}><Icon size={20} />{label}</Link>;
+            return <Link className={`nav-link${active ? " active" : ""}`} href={href} key={href} onClick={() => setMenuOpen(false)}><Icon size={20} />{label}</Link>;
           })}
         </nav>
         <div className="sidebar-user">
