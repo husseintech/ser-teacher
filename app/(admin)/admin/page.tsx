@@ -1,8 +1,8 @@
 import { and, count, desc, eq, gte, isNotNull } from "drizzle-orm";
-import { Activity, CheckCircle2, GraduationCap, UsersRound } from "lucide-react";
+import { Activity, CheckCircle2, GraduationCap, MessageSquareText, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { getDb } from "@/db";
-import { auditLogs, classes, students, users } from "@/db/schema";
+import { anonymousMessages, auditLogs, classes, students, users } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth";
 
 export const metadata = { title: "لوحة مدير النظام" };
@@ -20,11 +20,12 @@ export default async function AdminDashboardPage() {
   const db = getDb();
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  const [[teacherCount], [verifiedCount], [classCount], [studentCount], [newCount], recentActivity] = await Promise.all([
+  const [[teacherCount], [verifiedCount], [classCount], [studentCount], [unreadMessages], [newCount], recentActivity] = await Promise.all([
     db.select({ value: count() }).from(users).where(eq(users.role, "teacher")),
     db.select({ value: count() }).from(users).where(and(eq(users.role, "teacher"), isNotNull(users.emailVerifiedAt))),
     db.select({ value: count() }).from(classes).innerJoin(users, eq(users.id, classes.userId)).where(eq(users.role, "teacher")),
     db.select({ value: count() }).from(students).innerJoin(users, eq(users.id, students.userId)).where(and(eq(users.role, "teacher"), eq(students.active, true))),
+    db.select({ value: count() }).from(anonymousMessages).where(eq(anonymousMessages.status, "unread")),
     db.select({ value: count() }).from(users).where(and(eq(users.role, "teacher"), gte(users.createdAt, since))),
     db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(10),
   ]);
@@ -40,11 +41,12 @@ export default async function AdminDashboardPage() {
         <Link className="btn btn-dark" href="/admin/accounts"><UsersRound size={18} />عرض جميع الحسابات</Link>
       </header>
 
-      <section className="stats-grid" aria-label="إحصاءات النظام">
+      <section className="stats-grid admin-stats-grid" aria-label="إحصاءات النظام">
         <Stat icon={<UsersRound />} value={teacherCount.value} label="حسابات المعلمين" />
         <Stat icon={<CheckCircle2 />} value={verifiedCount.value} label="حسابات مؤكدة" />
         <Stat icon={<GraduationCap />} value={classCount.value} label="الصفوف المسجلة" />
         <Stat icon={<Activity />} value={studentCount.value} label="الطلاب النشطون" />
+        <Link href="/admin/messages" className="stat-card admin-message-stat"><div className="stat-icon"><MessageSquareText /></div><div><strong>{unreadMessages.value}</strong><span>رسائل جديدة</span></div></Link>
       </section>
 
       <div className="admin-summary-note">

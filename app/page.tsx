@@ -2,6 +2,7 @@ import { BookCheck, CalendarDays, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Brand } from "@/components/brand";
+import { AnonymousMessageBox } from "@/components/messages/anonymous-message-box";
 import { getCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -40,6 +41,7 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+      <AnonymousMessageBox />
     </main>
   );
 }

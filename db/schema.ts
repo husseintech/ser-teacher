@@ -58,6 +58,22 @@ export const auditLogs = pgTable(
   ],
 ).enableRLS();
 
+export const anonymousMessages = pgTable(
+  "anonymous_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    body: text("body").notNull(),
+    status: text("status").notNull().default("unread"),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("anonymous_messages_status_idx").on(table.status),
+    index("anonymous_messages_created_at_idx").on(table.createdAt),
+    check("anonymous_messages_status_check", sql`${table.status} in ('unread', 'read')`),
+  ],
+).enableRLS();
+
 export const sessions = pgTable(
   "sessions",
   {
