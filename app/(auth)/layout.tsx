@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Brand } from "@/components/brand";
+import { AnonymousMessageBox } from "@/components/messages/anonymous-message-box";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -8,6 +9,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <Link className="auth-brand" href="/"><Brand compact /></Link>
         {children}
       </div>
+      <AnonymousMessageBox />
     </main>
   );
 }
