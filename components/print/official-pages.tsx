@@ -161,7 +161,7 @@ export function AttendanceMonthPage({ profile, className, students, rowsCount, m
 export function AttendanceSummaryPages({ profile, teacherName, className, students, rowsCount }: { profile: Profile; teacherName: string; className: string; students: PrintStudent[]; rowsCount: number }) {
   const rows = paddedStudents(students, rowsCount, `annual-${className}`);
   const firstSemester = ACADEMIC_MONTHS.slice(0, 6);
-  const secondSemester = ACADEMIC_MONTHS.slice(6);
+  const secondSemester = [ACADEMIC_MONTHS[5], ...ACADEMIC_MONTHS.slice(6)];
   return <>
     <article className="print-page register-page annual-summary-page">
       <RegisterHeader profile={profile} />
