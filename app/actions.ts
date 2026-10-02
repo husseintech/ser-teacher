@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getDb } from "@/db";
-import { classes, students, subjects, teacherProfiles, teachingAssignments, users } from "@/db/schema";
+import { classes, gradebooks, students, subjects, teacherProfiles, teachingAssignments, users } from "@/db/schema";
 import { writeAuditLog } from "@/lib/audit";
 import { createSession, deleteSession, requireTeacher } from "@/lib/auth";
 import type { ActionState } from "@/lib/action-state";
@@ -167,6 +167,115 @@ export async function addSubjectAction(formData: FormData) {
   await getDb().insert(subjects).values({ userId: user.id, name }).onConflictDoNothing();
   await writeAuditLog(user, "subject_added", "إضافة مادة", { subject: name });
   revalidatePath("/setup");
+}
+
+export async function updateSubjectAction(formData: FormData) {
+  const user = await requireTeacher();
+  const subjectId = z.string().uuid().parse(formData.get("subjectId"));
+  const name = z.string().trim().min(2).parse(formData.get("name"));
+  const db = getDb();
+  const [owned] = await db
+    .select({ id: subjects.id })
+    .from(subjects)
+    .where(and(eq(subjects.id, subjectId), eq(subjects.userId, user.id)))
+    .limit(1);
+  if (!owned) throw new Error("المادة غير موجودة.");
+  const [duplicate] = await db
+    .select({ id: subjects.id })
+    .from(subjects)
+    .where(and(eq(subjects.userId, user.id), eq(subjects.name, name)))
+    .limit(1);
+  if (duplicate && duplicate.id !== subjectId) throw new Error("هذه المادة موجودة مسبقًا.");
+  await db.update(subjects).set({ name, updatedAt: new Date() }).where(eq(subjects.id, subjectId));
+  await writeAuditLog(user, "subject_updated", "تعديل اسم مادة", { subjectId, subject: name });
+  revalidatePath("/setup");
+  revalidatePath("/gradebooks");
+}
+
+export async function deleteSubjectAction(formData: FormData) {
+  const user = await requireTeacher();
+  const subjectId = z.string().uuid().parse(formData.get("subjectId"));
+  const db = getDb();
+  const [owned] = await db
+    .select({ id: subjects.id, name: subjects.name })
+    .from(subjects)
+    .where(and(eq(subjects.id, subjectId), eq(subjects.userId, user.id)))
+    .limit(1);
+  if (!owned) throw new Error("المادة غير موجودة.");
+  await db.delete(subjects).where(eq(subjects.id, subjectId));
+  await writeAuditLog(user, "subject_deleted", "حذف مادة", { subjectId, subject: owned.name });
+  revalidatePath("/setup");
+  revalidatePath("/gradebooks");
+}
+
+export async function updateGradebookWeightsAction(formData: FormData) {
+  const user = await requireTeacher();
+  const classId = z.string().uuid().parse(formData.get("classId"));
+  const subjectId = z.string().uuid().parse(formData.get("subjectId"));
+  const academicYear = z.string().trim().min(9).parse(formData.get("academicYear"));
+  const weightSchema = z.coerce.number().int().min(0).max(100);
+  const shortExam1Weight = weightSchema.parse(formData.get("shortExam1Weight"));
+  const midtermExamWeight = weightSchema.parse(formData.get("midtermExamWeight"));
+  const shortExam2Weight = weightSchema.parse(formData.get("shortExam2Weight"));
+  const qualitativeWeight = weightSchema.parse(formData.get("qualitativeWeight"));
+  const finalExamWeight = weightSchema.parse(formData.get("finalExamWeight"));
+  if (shortExam1Weight + midtermExamWeight + shortExam2Weight + qualitativeWeight + finalExamWeight !== 100) {
+    throw new Error("يجب أن يكون مجموع الأوزان 100%.");
+  }
+
+  const db = getDb();
+  const [assignment] = await db
+    .select({ classId: teachingAssignments.classId, subjectId: teachingAssignments.subjectId, stage: classes.stage })
+    .from(teachingAssignments)
+    .innerJoin(classes, eq(classes.id, teachingAssignments.classId))
+    .where(and(
+      eq(teachingAssignments.userId, user.id),
+      eq(teachingAssignments.classId, classId),
+      eq(teachingAssignments.subjectId, subjectId),
+      eq(classes.userId, user.id),
+    ))
+    .limit(1);
+  if (!assignment) throw new Error("هذه المادة غير مرتبطة بالصف.");
+
+  await db
+    .insert(gradebooks)
+    .values({
+      userId: user.id,
+      classId,
+      subjectId,
+      academicYear,
+      stage: assignment.stage,
+      shortExam1Weight,
+      midtermExamWeight,
+      shortExam2Weight,
+      qualitativeWeight,
+      finalExamWeight,
+    })
+    .onConflictDoUpdate({
+      target: [gradebooks.userId, gradebooks.classId, gradebooks.subjectId, gradebooks.academicYear],
+      set: {
+        stage: assignment.stage,
+        shortExam1Weight,
+        midtermExamWeight,
+        shortExam2Weight,
+        qualitativeWeight,
+        finalExamWeight,
+        updatedAt: new Date(),
+      },
+    });
+
+  await writeAuditLog(user, "gradebook_weights_updated", "تحديث أوزان دفتر العلامات", {
+    classId,
+    subjectId,
+    academicYear,
+    shortExam1Weight,
+    midtermExamWeight,
+    shortExam2Weight,
+    qualitativeWeight,
+    finalExamWeight,
+  });
+  revalidatePath("/print/gradebook/all/records");
+  revalidatePath("/gradebooks");
 }
 
 export async function addClassAction(formData: FormData) {
