@@ -6,12 +6,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getDb } from "@/db";
-import { classes, gradeRecords, students, subjects, teacherProfiles, teachingAssignments, users } from "@/db/schema";
+import { classes, gradeRecords, gradebooks, students, subjects, teacherProfiles, teachingAssignments, users } from "@/db/schema";
 import { writeAuditLog } from "@/lib/audit";
 import { createSession, deleteSession, requireTeacher } from "@/lib/auth";
 import type { ActionState } from "@/lib/action-state";
 import { sendVerificationEmail } from "@/lib/email";
 import { COMPLETION_MAX, GRADE_SECTIONS, MARK_KEYS } from "@/lib/grade-sections";
+import type { MarkKey } from "@/lib/grade-sections";
 import { resolveOwnedGradebook } from "@/lib/gradebooks";
 
 const emailSchema = z.string().trim().toLowerCase().email("أدخل بريدًا إلكترونيًا صحيحًا.");
@@ -229,6 +230,15 @@ export async function unlinkSubjectAction(formData: FormData) {
     .limit(1);
   if (!owned) throw new Error("المادة غير مرتبطة بهذا الصف.");
   await db.delete(teachingAssignments).where(eq(teachingAssignments.id, owned.id));
+  await db
+    .delete(gradebooks)
+    .where(
+      and(
+        eq(gradebooks.userId, user.id),
+        eq(gradebooks.classId, classId),
+        eq(gradebooks.subjectId, subjectId),
+      ),
+    );
   await writeAuditLog(user, "subject_unlinked", "فك ربط مادة عن صف", { classId, subjectId });
   revalidatePath("/setup");
   revalidatePath("/gradebooks");
@@ -352,7 +362,12 @@ const markEntrySchema = z.object({
   notes: z.string().max(300).default(""),
 });
 
-const markLimits = new Map(MARK_KEYS.map((key) => [key, GRADE_SECTIONS.find((section) => section.key === key)!.max]));
+const markLimits = new Map<MarkKey, number>(
+  MARK_KEYS.map((key): [MarkKey, number] => [
+    key,
+    GRADE_SECTIONS.find((section) => section.key === key)!.max,
+  ]),
+);
 
 export async function saveMarksAction(
   _: ActionState,
