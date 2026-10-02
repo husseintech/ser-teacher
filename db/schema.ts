@@ -188,6 +188,11 @@ export const gradebooks = pgTable(
       .references(() => subjects.id, { onDelete: "cascade" }),
     academicYear: text("academic_year").notNull(),
     stage: text("stage").notNull(),
+    shortExam1Weight: integer("short_exam_1_weight").notNull().default(10),
+    midtermExamWeight: integer("midterm_exam_weight").notNull().default(20),
+    shortExam2Weight: integer("short_exam_2_weight").notNull().default(10),
+    qualitativeWeight: integer("qualitative_weight").notNull().default(20),
+    finalExamWeight: integer("final_exam_weight").notNull().default(40),
     ...timestamps,
   },
   (table) => [
