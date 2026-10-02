@@ -1,7 +1,8 @@
 import { and, asc, eq } from "drizzle-orm";
 import { BookPlus, GraduationCap, Link2, Save, Users } from "lucide-react";
-import { addClassAction, addSubjectAction, assignSubjectAction, deleteClassAction, saveProfileAction, syncRosterAction, updateClassStageAction } from "@/app/actions";
+import { addClassAction, addSubjectAction, assignSubjectAction, deleteClassAction, deleteSubjectAction, saveProfileAction, syncRosterAction, updateClassStageAction, updateSubjectAction } from "@/app/actions";
 import { DeleteClassButton } from "@/components/app/delete-class-button";
+import { DeleteSubjectButton } from "@/components/app/delete-subject-button";
 import { getDb } from "@/db";
 import { classes, students, subjects, teacherProfiles, teachingAssignments } from "@/db/schema";
 import { requireTeacher } from "@/lib/auth";
@@ -60,7 +61,16 @@ export default async function SetupPage() {
               <button className="btn btn-primary" type="submit">إضافة المادة</button>
             </form>
             <div className="divider" />
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{subjectRows.length ? subjectRows.map((subject) => <span className="badge" key={subject.id}>{subject.name}</span>) : <span style={{ color: "var(--muted)" }}>لم تضف مواد بعد.</span>}</div>
+            <div className="subject-list">{subjectRows.length ? subjectRows.map((subject) => (
+              <div className="subject-item" key={subject.id}>
+                <form action={updateSubjectAction} className="inline-form subject-edit-form">
+                  <input type="hidden" name="subjectId" value={subject.id} />
+                  <div className="field"><label htmlFor={`subject-${subject.id}`}>اسم المادة</label><input className="input" id={`subject-${subject.id}`} name="name" defaultValue={subject.name} required /></div>
+                  <button className="btn btn-secondary btn-small" type="submit"><Save size={15} />حفظ الاسم</button>
+                </form>
+                <DeleteSubjectButton action={deleteSubjectAction} subjectId={subject.id} subjectName={subject.name} />
+              </div>
+            )) : <span style={{ color: "var(--muted)" }}>لم تضف مواد بعد.</span>}</div>
           </div>
 
           <div className="card">
