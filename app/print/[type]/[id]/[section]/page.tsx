@@ -120,12 +120,9 @@ export default async function PrintPage({
             completion: record.completion === null ? null : Number(record.completion),
           };
           const termNumber = record.term === 2 ? 2 : 1;
-          marks[record.studentId] = {
-            1: EMPTY_MARK_VALUES,
-            2: EMPTY_MARK_VALUES,
-            ...(marks[record.studentId] ?? {}),
-            [termNumber]: values,
-          };
+          const terms = marks[record.studentId] ?? { 1: EMPTY_MARK_VALUES, 2: EMPTY_MARK_VALUES };
+          terms[termNumber] = values;
+          marks[record.studentId] = terms;
         }
         marksByAssignment.set(assignment.id, marks);
       }

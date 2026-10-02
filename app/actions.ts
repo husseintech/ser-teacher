@@ -384,31 +384,31 @@ export async function saveMarksAction(
       JSON.parse(z.string().parse(formData.get("rows"))),
     );
 
-    const rows = parsed.map((row) => {
-      const marks: Partial<Record<(typeof MARK_KEYS)[number], number | null>> = {};
+    const cleanRows: {
+      studentId: string;
+      marks: Partial<Record<MarkKey, number | null>>;
+      completion: number | null;
+      notes: string;
+    }[] = [];
+    for (const row of parsed) {
+      const marks: Partial<Record<MarkKey, number | null>> = {};
+      let error: string | null = null;
       for (const key of MARK_KEYS) {
         const value = row.marks[key] ?? null;
         const limit = markLimits.get(key)!;
         if (value !== null && value > limit) {
           const section = GRADE_SECTIONS.find((item) => item.key === key)!;
-          return { error: `علامة «${section.label}» أعلى من الحد المسموح (${limit}).` };
+          error = `علامة «${section.label}» أعلى من الحد المسموح (${limit}).`;
+          break;
         }
         marks[key] = value;
       }
-      if (row.completion !== null && term !== 2) {
-        return { error: "علامة الإكمال متاحة في الفصل الدراسي الثاني فقط." };
+      if (!error && row.completion !== null && term !== 2) {
+        error = "علامة الإكمال متاحة في الفصل الدراسي الثاني فقط.";
       }
-      return { marks, completion: row.completion, notes: row.notes, studentId: row.studentId };
-    });
-
-    const failed = rows.find((row) => "error" in row);
-    if (failed && "error" in failed) return { ok: false, message: failed.error };
-    const cleanRows = rows as {
-      studentId: string;
-      marks: Partial<Record<(typeof MARK_KEYS)[number], number | null>>;
-      completion: number | null;
-      notes: string;
-    }[];
+      if (error) return { ok: false, message: error };
+      cleanRows.push({ marks, completion: row.completion, notes: row.notes, studentId: row.studentId });
+    }
 
     const book = await resolveOwnedGradebook(user.id, classId, subjectId);
     if (!book) return { ok: false, message: "المادة غير مرتبطة بهذا الصف." };
