@@ -9,7 +9,7 @@ import {
   StudentStatusPage,
 } from "@/components/print/official-pages";
 import { getDb } from "@/db";
-import { classes, students, subjects, teacherProfiles, teachingAssignments } from "@/db/schema";
+import { classes, gradebooks, students, subjects, teacherProfiles, teachingAssignments } from "@/db/schema";
 import { writeAuditLog } from "@/lib/audit";
 import { requireTeacher } from "@/lib/auth";
 import { ACADEMIC_MONTHS } from "@/lib/constants";
@@ -56,6 +56,7 @@ export default async function PrintPage({
         id: teachingAssignments.id,
         classId: classes.id,
         className: classes.name,
+        subjectId: subjects.id,
         subjectName: subjects.name,
         stage: classes.stage,
       })
@@ -66,6 +67,30 @@ export default async function PrintPage({
       .orderBy(asc(classes.name), asc(subjects.name));
 
     if (!assignments.length) notFound();
+    const gradebookRows = await db
+      .select({
+        classId: gradebooks.classId,
+        subjectId: gradebooks.subjectId,
+        shortExam1Weight: gradebooks.shortExam1Weight,
+        midtermExamWeight: gradebooks.midtermExamWeight,
+        shortExam2Weight: gradebooks.shortExam2Weight,
+        qualitativeWeight: gradebooks.qualitativeWeight,
+        finalExamWeight: gradebooks.finalExamWeight,
+      })
+      .from(gradebooks)
+      .where(and(eq(gradebooks.userId, user.id), eq(gradebooks.academicYear, safeProfile.academicYear)));
+    const weightsByAssignment = new Map(
+      gradebookRows.map((row) => [
+        `${row.classId}:${row.subjectId}`,
+        {
+          shortExam1: row.shortExam1Weight,
+          midtermExam: row.midtermExamWeight,
+          shortExam2: row.shortExam2Weight,
+          qualitative: row.qualitativeWeight,
+          finalExam: row.finalExamWeight,
+        },
+      ]),
+    );
     const classIds = [...new Set(assignments.map((item) => item.classId))];
     const studentRows = await db
       .select({ id: students.id, name: students.name, classId: students.classId, status: students.status })
@@ -88,6 +113,10 @@ export default async function PrintPage({
           students={relevantStudents.filter((student) => student.classId === assignment.classId)}
           rowsCount={rowsCount}
           stage={stage}
+          classId={assignment.classId}
+          subjectId={assignment.subjectId}
+          academicYear={safeProfile.academicYear}
+          weights={weightsByAssignment.get(`${assignment.classId}:${assignment.subjectId}`)}
           key={assignment.id}
         />
       ))}</>;
