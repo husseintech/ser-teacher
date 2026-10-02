@@ -349,3 +349,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
   body { background: #fff; }
   .no-print { display: none !important; }
 }
+
+.subject-list { display: grid; gap: 10px; }
+.subject-item { display: flex; align-items: end; gap: 8px; padding: 10px; border: 1px solid var(--border, #ddd); border-radius: 10px; }
+.subject-edit-form { flex: 1; }
+.subject-item > form:last-child { flex: 0 0 auto; }
+@media (max-width: 640px) { .subject-item { align-items: stretch; flex-direction: column; } .subject-item > form:last-child { align-self: flex-start; } }
