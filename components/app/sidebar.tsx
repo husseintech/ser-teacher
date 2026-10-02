@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpenCheck, CalendarCheck2, Home, LogOut, Menu, Settings2 } from "lucide-react";
+import { BookOpenCheck, CalendarCheck2, ClipboardPenLine, Home, LogOut, Menu, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -11,6 +11,7 @@ const navigation = [
   { href: "/dashboard", label: "لوحة المعلم", icon: Home },
   { href: "/setup", label: "بياناتي وصفوفي", icon: Settings2 },
   { href: "/gradebooks", label: "دفتر العلامات", icon: BookOpenCheck },
+  { href: "/marks", label: "إدخال العلامات", icon: ClipboardPenLine },
   { href: "/attendance", label: "الحضور والغياب", icon: CalendarCheck2 },
 ];
 

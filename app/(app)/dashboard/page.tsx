@@ -41,7 +41,7 @@ export default async function DashboardPage() {
       <section className="card" style={{ marginTop: 20 }}>
         <div className="card-title"><div><h2>خدماتك</h2><span style={{ color: "var(--muted)" }}>ابدأ بالخدمة التي تحتاجها الآن.</span></div></div>
         <div className="quick-links">
-          <Link className="quick-link" href="/gradebooks"><BookOpenCheck /><strong>دفتر العلامات</strong><span>طباعة دفتر ورقي فارغ للفصلين الدراسيين.</span></Link>
+          <Link className="quick-link" href="/gradebooks"><BookOpenCheck /><strong>دفتر العلامات</strong><span>إدخال العلامات إلكترونيًا ثم طباعتها جاهزة للفصلين.</span></Link>
           <Link className="quick-link" href="/attendance"><CalendarCheck2 /><strong>الحضور والغياب</strong><span>طباعة سجل ورقي من آب حتى حزيران.</span></Link>
           <Link className="quick-link" href="/setup"><Users /><strong>إدارة الطلاب</strong><span>ألصق أسماء طلابك من Excel، كل اسم في سطر.</span></Link>
         </div>

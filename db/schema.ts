@@ -212,17 +212,30 @@ export const gradeRecords = pgTable(
     studentId: uuid("student_id")
       .notNull()
       .references(() => students.id, { onDelete: "cascade" }),
-    participation10: numeric("participation_10", { precision: 5, scale: 2 }),
-    firstExam20: numeric("first_exam_20", { precision: 5, scale: 2 }),
-    activities10: numeric("activities_10", { precision: 5, scale: 2 }),
-    secondExam20: numeric("second_exam_20", { precision: 5, scale: 2 }),
+    term: integer("term").notNull().default(1),
+    shortExam1_10: numeric("short_exam1_10", { precision: 5, scale: 2 }),
+    midTerm20: numeric("mid_term_20", { precision: 5, scale: 2 }),
+    shortExam2_10: numeric("short_exam2_10", { precision: 5, scale: 2 }),
+    qualitative20: numeric("qualitative_20", { precision: 5, scale: 2 }),
     finalExam40: numeric("final_exam_40", { precision: 5, scale: 2 }),
+    completion: numeric("completion", { precision: 5, scale: 2 }),
     notes: text("notes").notNull().default(""),
     ...timestamps,
   },
   (table) => [
     index("grade_records_student_id_idx").on(table.studentId),
-    uniqueIndex("grade_records_book_student_unique").on(table.gradebookId, table.studentId),
+    check("grade_records_term_check", sql`${table.term} in (1, 2)`),
+    check("grade_records_completion_term_check", sql`${table.completion} is null or ${table.term} = 2`),
+    check(
+      "grade_records_marks_scale_check",
+      sql`(${table.shortExam1_10} is null or (${table.shortExam1_10} >= 0 and ${table.shortExam1_10} <= 10))
+	and (${table.midTerm20} is null or (${table.midTerm20} >= 0 and ${table.midTerm20} <= 20))
+	and (${table.shortExam2_10} is null or (${table.shortExam2_10} >= 0 and ${table.shortExam2_10} <= 10))
+	and (${table.qualitative20} is null or (${table.qualitative20} >= 0 and ${table.qualitative20} <= 20))
+	and (${table.finalExam40} is null or (${table.finalExam40} >= 0 and ${table.finalExam40} <= 40))
+	and (${table.completion} is null or (${table.completion} >= 0 and ${table.completion} <= 10))`,
+    ),
+    uniqueIndex("grade_records_book_student_term_unique").on(table.gradebookId, table.studentId, table.term),
   ],
 );
 

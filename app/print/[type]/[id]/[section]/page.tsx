@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { PrintToolbar } from "@/components/print/print-toolbar";
 import {
@@ -8,11 +8,15 @@ import {
   OfficialCover,
   StudentStatusPage,
 } from "@/components/print/official-pages";
+import type { PrintedMarks } from "@/components/print/official-pages";
 import { getDb } from "@/db";
-import { classes, students, subjects, teacherProfiles, teachingAssignments } from "@/db/schema";
+import { classes, gradeRecords, students, subjects, teacherProfiles, teachingAssignments } from "@/db/schema";
 import { writeAuditLog } from "@/lib/audit";
 import { requireTeacher } from "@/lib/auth";
 import { ACADEMIC_MONTHS } from "@/lib/constants";
+import { findOwnedGradebookId } from "@/lib/gradebooks";
+import { EMPTY_MARK_VALUES } from "@/lib/grade-sections";
+import type { MarkValues } from "@/lib/grade-sections";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "طباعة السجل" };
@@ -56,6 +60,7 @@ export default async function PrintPage({
         id: teachingAssignments.id,
         classId: classes.id,
         className: classes.name,
+        subjectId: teachingAssignments.subjectId,
         subjectName: subjects.name,
         stage: classes.stage,
       })
@@ -79,6 +84,52 @@ export default async function PrintPage({
     if (section === "cover") {
       content = <OfficialCover title="دفتر العلامات" teacherName={user.fullName} profile={safeProfile} classNames={classNames} subjectNames={subjectNames} />;
     } else if (section === "records") {
+      const resolved = await Promise.all(
+        assignments.map(async (assignment) => ({
+          assignment,
+          gradebookId: (await findOwnedGradebookId(user.id, assignment.classId, assignment.subjectId)) ?? undefined,
+        })),
+      );
+      const bookIds = resolved
+        .map((item) => item.gradebookId)
+        .filter((id): id is string => Boolean(id));
+
+      const recordRows = bookIds.length
+        ? await db
+            .select()
+            .from(gradeRecords)
+            .where(inArray(gradeRecords.gradebookId, bookIds))
+        : [];
+
+      const recordsByBook = new Map<string, (typeof recordRows)>();
+      for (const record of recordRows) {
+        recordsByBook.set(record.gradebookId, [...(recordsByBook.get(record.gradebookId) ?? []), record]);
+      }
+
+      const marksByAssignment = new Map<string, PrintedMarks>();
+      for (const { assignment, gradebookId } of resolved) {
+        if (!gradebookId) continue;
+        const marks: PrintedMarks = {};
+        for (const record of recordsByBook.get(gradebookId) ?? []) {
+          const values: MarkValues = {
+            shortExam1_10: record.shortExam1_10 === null ? null : Number(record.shortExam1_10),
+            midTerm20: record.midTerm20 === null ? null : Number(record.midTerm20),
+            shortExam2_10: record.shortExam2_10 === null ? null : Number(record.shortExam2_10),
+            qualitative20: record.qualitative20 === null ? null : Number(record.qualitative20),
+            finalExam40: record.finalExam40 === null ? null : Number(record.finalExam40),
+            completion: record.completion === null ? null : Number(record.completion),
+          };
+          const termNumber = record.term === 2 ? 2 : 1;
+          marks[record.studentId] = {
+            1: EMPTY_MARK_VALUES,
+            2: EMPTY_MARK_VALUES,
+            ...(marks[record.studentId] ?? {}),
+            [termNumber]: values,
+          };
+        }
+        marksByAssignment.set(assignment.id, marks);
+      }
+
       content = <>{assignments.map((assignment) => (
         <GradebookPages
           profile={safeProfile}
@@ -88,6 +139,7 @@ export default async function PrintPage({
           students={relevantStudents.filter((student) => student.classId === assignment.classId)}
           rowsCount={rowsCount}
           stage={stage}
+          marks={marksByAssignment.get(assignment.id) ?? {}}
           key={assignment.id}
         />
       ))}</>;

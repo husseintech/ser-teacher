@@ -202,6 +202,34 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .grade-table input { width: 82px; min-height: 38px; text-align: center; border: 1px solid var(--line); border-radius: 8px; }
 .grade-table input.notes { width: 170px; text-align: right; }
 .grade-total { font-weight: 800; color: var(--green-dark); }
+.term-tabs { display: flex; gap: 8px; margin-bottom: 16px; padding-bottom: 4px; }
+.term-tab { flex: none; padding: 9px 16px; border: 1px solid var(--line); border-radius: 999px; background: #fff; font-weight: 700; font-size: .87rem; color: var(--ink); cursor: pointer; }
+.term-tab.active { color: #fff; border-color: var(--green); background: var(--green); }
+.term-tabs.compact { margin: 0; padding: 18px 22px 0; }
+.term-tabs.compact .term-tab { padding: 6px 15px; font-size: .8rem; }
+.weight-hint { color: var(--muted); font-size: .74rem; font-weight: 600; }
+.term-tab.active .weight-hint { color: rgba(255,255,255,.85); }
+.grade-table th .weight-hint { display: block; }
+.mark-input { width: 72px; min-height: 36px; padding: 4px 2px; text-align: center; border: 1px solid var(--line); border-radius: 8px; background: #fbfdfd; }
+.mark-input:focus { border-color: var(--green); background: #fff; outline: none; box-shadow: 0 0 0 3px rgba(13,123,95,.1); }
+.mark-input.empty { color: #9aabb3; }
+.student-status-hint { display: inline-block; margin-right: 6px; padding: 1px 7px; border-radius: 999px; background: #fff4dd; color: #8a6412; font-size: .7rem; font-weight: 700; }
+.linked-subject-list { display: grid; gap: 7px; margin-bottom: 12px; }
+.linked-subject-item { display: flex; align-items: center; justify-content: space-between; gap: 9px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+
+.marks-dialog { width: min(calc(100% - 28px), 470px); max-height: min(88vh, 720px); margin: auto; padding: 0; color: var(--ink); background: #fff; border: 0; border-radius: 20px; box-shadow: 0 28px 80px rgba(7,28,40,.3); overflow: auto; }
+.marks-dialog::backdrop { background: rgba(7,24,34,.67); backdrop-filter: blur(3px); }
+.marks-dialog-header { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 18px 22px; color: #fff; background: var(--navy); }
+.marks-dialog-header h2 { margin: 0; font-size: 1.12rem; }
+.marks-dialog-header span { color: rgba(255,255,255,.75); font-size: .82rem; }
+.marks-dialog-close { width: 36px; height: 36px; display: grid; place-items: center; color: #fff; background: rgba(255,255,255,.09); border: 0; border-radius: 10px; cursor: pointer; }
+.marks-dialog-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; padding: 20px 22px 4px; }
+.marks-dialog-grid .input { text-align: center; }
+.marks-dialog-total { display: flex; align-items: center; justify-content: space-between; gap: 10px; grid-column: 1 / -1; padding: 11px 13px; border: 1px solid #b9e4d7; border-radius: 12px; background: #eefaf6; }
+.marks-dialog-total span { color: var(--green-dark); font-size: .85rem; font-weight: 700; }
+.marks-dialog-total strong { color: var(--navy); font-size: 1.05rem; }
+.marks-dialog-note { margin: 10px 22px 0; padding: 10px 12px; border-radius: 11px; background: #f6f9fa; color: var(--muted); font-size: .78rem; }
+.marks-dialog-actions { display: flex; gap: 10px; justify-content: flex-end; padding: 18px 22px 22px; }
 .month-tabs { display: flex; gap: 8px; overflow: auto; padding-bottom: 7px; margin-bottom: 14px; }
 .month-tab { flex: none; padding: 8px 13px; border-radius: 999px; border: 1px solid var(--line); background: #fff; font-weight: 700; font-size: .85rem; }
 .month-tab.active { color: #fff; border-color: var(--green); background: var(--green); }
@@ -261,6 +289,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .class-stage-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 11px; background: #f9fbfb; }
 .class-stage-item strong { color: var(--navy); }
 .class-stage-item span { color: var(--green-dark); font-size: .78rem; font-weight: 700; }
+.subject-manage-list { display: grid; gap: 8px; }
+.subject-manage-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 11px; background: #f9fbfb; }
+.subject-rename-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1 1 auto; min-width: 0; }
+.subject-rename-form .input { flex: 1 1 130px; min-width: 0; }
+.subject-item-actions { display: flex; align-items: center; gap: 8px; flex: none; }
 
 .anonymous-message-trigger { position: fixed; left: 22px; bottom: 22px; z-index: 70; min-height: 48px; display: inline-flex; align-items: center; gap: 9px; padding: 10px 16px; color: #fff; background: var(--green); border: 0; border-radius: 999px; box-shadow: 0 12px 30px rgba(7,92,71,.3); font-weight: 800; cursor: pointer; transition: transform .18s ease, background .18s ease; }
 .anonymous-message-trigger:hover { transform: translateY(-2px); background: var(--green-dark); }
@@ -329,6 +362,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .activity-item { grid-template-columns: 12px minmax(0, 1fr); }
   .activity-item time { grid-column: 2; }
   .class-stage-item { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .subject-manage-item { align-items: stretch; flex-direction: column; gap: 9px; }
+  .subject-item-actions { justify-content: space-between; }
+  .marks-dialog-grid { grid-template-columns: 1fr; }
+  .term-tabs { overflow: auto; }
   .anonymous-message-trigger { left: 14px; bottom: 14px; padding: 11px 13px; }
   .anonymous-message-trigger span { display: none; }
   .inbox-message-card > header { align-items: flex-start; flex-direction: column; }

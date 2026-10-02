@@ -90,6 +90,10 @@
 }
 .upper-grade-table .semester-total-head { width: 22mm; }
 .upper-grade-table .completion-head { width: 16mm; }
+.upper-grade-table tbody td { text-align: center; }
+.upper-grade-table tbody .name-col { text-align: right; }
+.upper-grade-table .mark-cell { color: #12303f; }
+.upper-grade-table .mark-total { font-weight: 700; background: #f2f8fb; }
 
 .student-status-page .register-title { margin-bottom: 2mm; }
 .student-status-table { font-size: 4.9pt; }

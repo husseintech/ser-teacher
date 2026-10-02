@@ -17,7 +17,7 @@ export default async function HomePage() {
         <Brand />
         <div className="landing-brand-copy">
           <h2>دفاترك المدرسية، منظمة وجاهزة للطباعة.</h2>
-          <p>أدخل صفوفك وموادك وأسماء طلابك مرة واحدة، ثم اطبع دفاتر العلامات والحضور والغياب الرسمية الجاهزة للتعبئة اليدوية.</p>
+          <p>أدخل صفوفك وموادك وأسماء طلابك مرة واحدة، ثم أدخل العلامات إلكترونيًا واطبع دفاتر العلامات والحضور والغياب الرسمية.</p>
           <div className="service-chips">
             <span className="service-chip">دفتر العلامات</span>
             <span className="service-chip">دفتر الحضور والغياب</span>

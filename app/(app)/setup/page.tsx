@@ -1,7 +1,9 @@
 import { and, asc, eq } from "drizzle-orm";
 import { BookPlus, GraduationCap, Link2, Save, Users } from "lucide-react";
-import { addClassAction, addSubjectAction, assignSubjectAction, deleteClassAction, saveProfileAction, syncRosterAction, updateClassStageAction } from "@/app/actions";
+import { addClassAction, addSubjectAction, assignSubjectAction, deleteClassAction, deleteSubjectAction, renameSubjectAction, saveProfileAction, syncRosterAction, unlinkSubjectAction, updateClassStageAction } from "@/app/actions";
 import { DeleteClassButton } from "@/components/app/delete-class-button";
+import { DeleteSubjectButton } from "@/components/app/delete-subject-button";
+import { UnlinkSubjectButton } from "@/components/app/unlink-subject-button";
 import { getDb } from "@/db";
 import { classes, students, subjects, teacherProfiles, teachingAssignments } from "@/db/schema";
 import { requireTeacher } from "@/lib/auth";
@@ -25,6 +27,11 @@ export default async function SetupPage() {
 
   const assignmentsByClass = new Map<string, typeof assignmentRows>();
   for (const assignment of assignmentRows) assignmentsByClass.set(assignment.classId, [...(assignmentsByClass.get(assignment.classId) ?? []), assignment]);
+
+  const linksBySubject = new Map<string, number>();
+  for (const assignment of assignmentRows) {
+    linksBySubject.set(assignment.subjectId, (linksBySubject.get(assignment.subjectId) ?? 0) + 1);
+  }
 
   return (
     <>
@@ -59,8 +66,26 @@ export default async function SetupPage() {
               <div className="field"><label htmlFor="subjectName">اسم المادة</label><input className="input" id="subjectName" name="name" placeholder="اللغة العربية" required /></div>
               <button className="btn btn-primary" type="submit">إضافة المادة</button>
             </form>
+            <p style={{ color: "var(--muted)", fontSize: ".82rem", margin: "10px 0 0" }}>يمكنك تعديل اسم أي مادة أو حذفها، كما يمكنك فك ربطها عن أي صف من قسم «ربط المواد بالصفوف» أدناه.</p>
             <div className="divider" />
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{subjectRows.length ? subjectRows.map((subject) => <span className="badge" key={subject.id}>{subject.name}</span>) : <span style={{ color: "var(--muted)" }}>لم تضف مواد بعد.</span>}</div>
+            <div className="subject-manage-list">{subjectRows.length ? subjectRows.map((subject) => (
+              <div className="subject-manage-item" key={subject.id}>
+                <form action={renameSubjectAction} className="subject-rename-form">
+                  <input type="hidden" name="subjectId" value={subject.id} />
+                  <input className="input" name="name" defaultValue={subject.name} aria-label={`اسم المادة ${subject.name}`} required minLength={2} />
+                  <button className="btn btn-secondary btn-small" type="submit"><Save size={15} />حفظ الاسم</button>
+                </form>
+                <div className="subject-item-actions">
+                  <span className="badge">{linksBySubject.get(subject.id) ?? 0} صف</span>
+                  <DeleteSubjectButton
+                    action={deleteSubjectAction}
+                    subjectId={subject.id}
+                    subjectName={subject.name}
+                    linkedCount={linksBySubject.get(subject.id) ?? 0}
+                  />
+                </div>
+              </div>
+            )) : <span style={{ color: "var(--muted)" }}>لم تضف مواد بعد.</span>}</div>
           </div>
 
           <div className="card">
@@ -93,17 +118,31 @@ export default async function SetupPage() {
 
         <section className="card">
           <div className="card-title"><div><h2>ربط المواد بالصفوف</h2><span style={{ color: "var(--muted)" }}>حدد المادة التي تدرسها لكل صف؛ يمكن إضافة أكثر من مادة.</span></div><Link2 color="var(--green)" /></div>
-          {classRows.length && subjectRows.length ? <div className="roster-grid">{classRows.map((schoolClass) => (
+          {classRows.length && subjectRows.length ? <div className="roster-grid">{classRows.map((schoolClass) => {
+            const linked = assignmentsByClass.get(schoolClass.id) ?? [];
+            const linkedIds = new Set(linked.map((row) => row.subjectId));
+            return (
             <div className="roster-card" key={schoolClass.id}>
               <h3>{schoolClass.name}</h3>
-              <p>{(assignmentsByClass.get(schoolClass.id) ?? []).map((row) => row.subjectName).join("، ") || "لا توجد مواد مرتبطة"}</p>
-              <form action={assignSubjectAction} className="inline-form">
+              {linked.length ? <div className="linked-subject-list">{linked.map((row) => (
+                <div className="linked-subject-item" key={row.id}>
+                  <span className="badge">{row.subjectName}</span>
+                  <UnlinkSubjectButton
+                    action={unlinkSubjectAction}
+                    classId={schoolClass.id}
+                    className={schoolClass.name}
+                    subjectId={row.subjectId}
+                    subjectName={row.subjectName}
+                  />
+                </div>
+              ))}</div> : <p>لا توجد مواد مرتبطة</p>}
+              <form action={assignSubjectAction} className="inline-form" style={{ marginTop: 12 }}>
                 <input type="hidden" name="classId" value={schoolClass.id} />
-                <div className="field"><select className="select" name="subjectId" aria-label={`مادة ${schoolClass.name}`} required><option value="">اختر المادة</option>{subjectRows.map((subject) => <option value={subject.id} key={subject.id}>{subject.name}</option>)}</select></div>
-                <button className="btn btn-secondary btn-small" type="submit">ربط المادة</button>
+                <div className="field"><select className="select" name="subjectId" aria-label={`مادة ${schoolClass.name}`} required><option value="">اختر المادة</option>{subjectRows.filter((subject) => !linkedIds.has(subject.id)).map((subject) => <option value={subject.id} key={subject.id}>{subject.name}</option>)}</select></div>
+                <button className="btn btn-secondary btn-small" disabled={linkedIds.size >= subjectRows.length} type="submit"><Link2 size={15} />ربط المادة</button>
               </form>
             </div>
-          ))}</div> : <div className="empty-state">أضف صفًا ومادة أولًا.</div>}
+          );})}</div> : <div className="empty-state">أضف صفًا ومادة أولًا.</div>}
         </section>
 
         <section className="card">

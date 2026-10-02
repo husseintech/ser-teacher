@@ -1,16 +1,18 @@
 "use server";
 
 import bcrypt from "bcryptjs";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getDb } from "@/db";
-import { classes, students, subjects, teacherProfiles, teachingAssignments, users } from "@/db/schema";
+import { classes, gradeRecords, students, subjects, teacherProfiles, teachingAssignments, users } from "@/db/schema";
 import { writeAuditLog } from "@/lib/audit";
 import { createSession, deleteSession, requireTeacher } from "@/lib/auth";
 import type { ActionState } from "@/lib/action-state";
 import { sendVerificationEmail } from "@/lib/email";
+import { COMPLETION_MAX, GRADE_SECTIONS, MARK_KEYS } from "@/lib/grade-sections";
+import { resolveOwnedGradebook } from "@/lib/gradebooks";
 
 const emailSchema = z.string().trim().toLowerCase().email("أدخل بريدًا إلكترونيًا صحيحًا.");
 const passwordSchema = z
@@ -169,6 +171,71 @@ export async function addSubjectAction(formData: FormData) {
   revalidatePath("/setup");
 }
 
+export async function renameSubjectAction(formData: FormData) {
+  const user = await requireTeacher();
+  const subjectId = z.string().uuid().parse(formData.get("subjectId"));
+  const name = z.string().trim().min(2).parse(formData.get("name"));
+  const db = getDb();
+  const [owned] = await db
+    .select({ id: subjects.id, name: subjects.name })
+    .from(subjects)
+    .where(and(eq(subjects.id, subjectId), eq(subjects.userId, user.id)))
+    .limit(1);
+  if (!owned) throw new Error("المادة غير موجودة.");
+  if (owned.name === name) return;
+  await db
+    .update(subjects)
+    .set({ name, updatedAt: new Date() })
+    .where(eq(subjects.id, subjectId));
+  await writeAuditLog(user, "subject_renamed", "تعديل اسم مادة", { subjectId, from: owned.name, to: name });
+  revalidatePath("/setup");
+  revalidatePath("/gradebooks");
+  revalidatePath("/marks");
+}
+
+export async function deleteSubjectAction(formData: FormData) {
+  const user = await requireTeacher();
+  const subjectId = z.string().uuid().parse(formData.get("subjectId"));
+  const db = getDb();
+  const [owned] = await db
+    .select({ id: subjects.id, name: subjects.name })
+    .from(subjects)
+    .where(and(eq(subjects.id, subjectId), eq(subjects.userId, user.id)))
+    .limit(1);
+  if (!owned) throw new Error("المادة غير موجودة.");
+  await db.delete(subjects).where(eq(subjects.id, subjectId));
+  await writeAuditLog(user, "subject_deleted", "حذف مادة وربطها بالصفوف", { subjectId, subjectName: owned.name });
+  revalidatePath("/setup");
+  revalidatePath("/gradebooks");
+  revalidatePath("/marks");
+  revalidatePath("/dashboard");
+}
+
+export async function unlinkSubjectAction(formData: FormData) {
+  const user = await requireTeacher();
+  const classId = z.string().uuid().parse(formData.get("classId"));
+  const subjectId = z.string().uuid().parse(formData.get("subjectId"));
+  const db = getDb();
+  const [owned] = await db
+    .select({ id: teachingAssignments.id })
+    .from(teachingAssignments)
+    .where(
+      and(
+        eq(teachingAssignments.userId, user.id),
+        eq(teachingAssignments.classId, classId),
+        eq(teachingAssignments.subjectId, subjectId),
+      ),
+    )
+    .limit(1);
+  if (!owned) throw new Error("المادة غير مرتبطة بهذا الصف.");
+  await db.delete(teachingAssignments).where(eq(teachingAssignments.id, owned.id));
+  await writeAuditLog(user, "subject_unlinked", "فك ربط مادة عن صف", { classId, subjectId });
+  revalidatePath("/setup");
+  revalidatePath("/gradebooks");
+  revalidatePath("/marks");
+  revalidatePath("/dashboard");
+}
+
 export async function addClassAction(formData: FormData) {
   const user = await requireTeacher();
   const name = z.string().trim().min(2).parse(formData.get("name"));
@@ -276,4 +343,119 @@ export async function updateStudentStatusAction(formData: FormData) {
   await getDb().update(students).set({ status, updatedAt: new Date() }).where(and(eq(students.id, studentId), eq(students.userId, user.id)));
   await writeAuditLog(user, "student_status_updated", "تحديث حالة طالب", { studentId, status });
   revalidatePath("/setup");
+}
+
+const markEntrySchema = z.object({
+  studentId: z.string().uuid(),
+  marks: z.record(z.string(), z.number().min(0).nullable()),
+  completion: z.number().min(0).max(COMPLETION_MAX).nullable(),
+  notes: z.string().max(300).default(""),
+});
+
+const markLimits = new Map(MARK_KEYS.map((key) => [key, GRADE_SECTIONS.find((section) => section.key === key)!.max]));
+
+export async function saveMarksAction(
+  _: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const user = await requireTeacher();
+    const classId = z.string().uuid().parse(formData.get("classId"));
+    const subjectId = z.string().uuid().parse(formData.get("subjectId"));
+    const term = z.union([z.literal(1), z.literal(2)]).parse(
+      Number(formData.get("term")),
+    );
+    const parsed = z.array(markEntrySchema).min(1).max(60).parse(
+      JSON.parse(z.string().parse(formData.get("rows"))),
+    );
+
+    const rows = parsed.map((row) => {
+      const marks: Partial<Record<(typeof MARK_KEYS)[number], number | null>> = {};
+      for (const key of MARK_KEYS) {
+        const value = row.marks[key] ?? null;
+        const limit = markLimits.get(key)!;
+        if (value !== null && value > limit) {
+          const section = GRADE_SECTIONS.find((item) => item.key === key)!;
+          return { error: `علامة «${section.label}» أعلى من الحد المسموح (${limit}).` };
+        }
+        marks[key] = value;
+      }
+      if (row.completion !== null && term !== 2) {
+        return { error: "علامة الإكمال متاحة في الفصل الدراسي الثاني فقط." };
+      }
+      return { marks, completion: row.completion, notes: row.notes, studentId: row.studentId };
+    });
+
+    const failed = rows.find((row) => "error" in row);
+    if (failed && "error" in failed) return { ok: false, message: failed.error };
+    const cleanRows = rows as {
+      studentId: string;
+      marks: Partial<Record<(typeof MARK_KEYS)[number], number | null>>;
+      completion: number | null;
+      notes: string;
+    }[];
+
+    const book = await resolveOwnedGradebook(user.id, classId, subjectId);
+    if (!book) return { ok: false, message: "المادة غير مرتبطة بهذا الصف." };
+
+    const validStudents = await getDb()
+      .select({ id: students.id })
+      .from(students)
+      .where(
+        and(
+          eq(students.userId, user.id),
+          eq(students.classId, classId),
+          inArray(students.id, cleanRows.map((row) => row.studentId)),
+        ),
+      );
+    if (validStudents.length !== cleanRows.length) {
+      return { ok: false, message: "توجد أسماء طلاب لا تخص هذا الصف." };
+    }
+
+    await getDb()
+      .insert(gradeRecords)
+      .values(
+        cleanRows.map((row) => ({
+          gradebookId: book.gradebookId,
+          studentId: row.studentId,
+          term,
+          shortExam1_10: row.marks.shortExam1_10?.toString() ?? null,
+          midTerm20: row.marks.midTerm20?.toString() ?? null,
+          shortExam2_10: row.marks.shortExam2_10?.toString() ?? null,
+          qualitative20: row.marks.qualitative20?.toString() ?? null,
+          finalExam40: row.marks.finalExam40?.toString() ?? null,
+          completion: row.completion?.toString() ?? null,
+          notes: row.notes,
+        })),
+      )
+      .onConflictDoUpdate({
+        target: [gradeRecords.gradebookId, gradeRecords.studentId, gradeRecords.term],
+        set: {
+          shortExam1_10: sql`excluded.short_exam1_10`,
+          midTerm20: sql`excluded.mid_term_20`,
+          shortExam2_10: sql`excluded.short_exam2_10`,
+          qualitative20: sql`excluded.qualitative_20`,
+          finalExam40: sql`excluded.final_exam_40`,
+          completion: sql`excluded.completion`,
+          notes: sql`excluded.notes`,
+          updatedAt: new Date(),
+        },
+      });
+
+    await writeAuditLog(user, "marks_saved", "حفظ علامات الفصل الدراسي", {
+      classId,
+      subjectId,
+      term,
+      records: cleanRows.length,
+    });
+    revalidatePath(`/marks/${classId}/${subjectId}`);
+    revalidatePath("/marks");
+    revalidatePath("/gradebooks");
+    return { ok: true, message: `تم حفظ علامات الفصل ${term === 1 ? "الأول" : "الثاني"}.` };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { ok: false, message: "تعذّر قراءة العلامات. أعد تحميل الصفحة." };
+    }
+    return { ok: false, message: messageFrom(error) };
+  }
 }

@@ -1,5 +1,6 @@
 import { asc, eq } from "drizzle-orm";
-import { BookOpenCheck, Printer } from "lucide-react";
+import { BookOpenCheck, ClipboardPenLine, Printer } from "lucide-react";
+import Link from "next/link";
 import { getDb } from "@/db";
 import { classes, subjects, teacherProfiles, teachingAssignments } from "@/db/schema";
 import { requireTeacher } from "@/lib/auth";
@@ -13,8 +14,10 @@ export default async function GradebooksPage() {
     db
       .select({
         id: teachingAssignments.id,
+        classId: teachingAssignments.classId,
         className: classes.name,
         stage: classes.stage,
+        subjectId: teachingAssignments.subjectId,
         subjectName: subjects.name,
       })
       .from(teachingAssignments)
@@ -33,7 +36,7 @@ export default async function GradebooksPage() {
       <header className="page-header">
         <div>
           <h1>دفتر العلامات للطباعة</h1>
-          <p>دفتر ورقي فارغ بأسماء الطلاب، مطابق لآلية منصة المدرسة ومن دون إدخال أو حفظ علامات إلكترونيًا.</p>
+          <p>دفتر بأسماء الطلاب مطابق لآلية منصة المدرسة. العلامات التي تدخلها من صفحة «إدخال العلامات» تظهر جاهزة في هذه الصفحات.</p>
         </div>
       </header>
 
@@ -94,12 +97,17 @@ export default async function GradebooksPage() {
           <div className="card-title"><h2>الصفوف والمواد المدرجة في الدفتر</h2></div>
           <div className="data-table-wrap">
             <table className="data-table">
-              <thead><tr><th>الصف</th><th>المادة</th><th>نوع الدفتر</th><th>صفحات الطباعة</th></tr></thead>
+              <thead><tr><th>الصف</th><th>المادة</th><th>نوع الدفتر</th><th>صفحات الطباعة</th><th>العلامات</th></tr></thead>
               <tbody>{assignments.map((assignment) => <tr key={assignment.id}>
                 <td>{assignment.className}</td>
                 <td>{assignment.subjectName}</td>
                 <td>{assignment.stage === "basic" ? "المرحلة الأساسية (1–4)" : "المرحلة من الخامس فما فوق"}</td>
                 <td>صفحتان</td>
+                <td>
+                  <Link className="btn btn-primary btn-small" href={`/marks/${assignment.classId}/${assignment.subjectId}`}>
+                    <ClipboardPenLine size={15} />تعديل العلامات
+                  </Link>
+                </td>
               </tr>)}</tbody>
             </table>
           </div>

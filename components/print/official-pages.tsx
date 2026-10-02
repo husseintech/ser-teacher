@@ -1,8 +1,12 @@
 import type { CSSProperties } from "react";
 import { ACADEMIC_MONTHS, arabicWeekday, isWeekend, monthDays, monthYear } from "@/lib/constants";
+import { GRADE_SECTIONS, EMPTY_MARK_VALUES, formatMark, markTotal } from "@/lib/grade-sections";
+import type { MarkValues } from "@/lib/grade-sections";
 
 type Profile = { schoolName: string; schoolNationalId: string; directorate: string; academicYear: string };
 type PrintStudent = { id: string; name: string; status: string };
+
+export type PrintedMarks = Record<string, Record<1 | 2, MarkValues>>;
 
 function paddedStudents(students: PrintStudent[], rowsCount: number, prefix: string) {
   const rows = [...students.slice(0, rowsCount)];
@@ -45,14 +49,27 @@ function RegisterHeader({ profile, teacherName }: { profile: Profile; teacherNam
   );
 }
 
-export function GradebookPages({ profile, teacherName, className, subjectName, students, rowsCount, stage }: { profile: Profile; teacherName: string; className: string; subjectName: string; students: PrintStudent[]; rowsCount: number; stage: "basic" | "upper" }) {
+const EMPTY_MARKS = EMPTY_MARK_VALUES;
+
+function hasAnyMark(values: MarkValues) {
+  return GRADE_SECTIONS.some((section) => values[section.key] !== null) || values.completion !== null;
+}
+
+export function GradebookPages({ profile, teacherName, className, subjectName, students, rowsCount, stage, marks }: { profile: Profile; teacherName: string; className: string; subjectName: string; students: PrintStudent[]; rowsCount: number; stage: "basic" | "upper"; marks?: PrintedMarks }) {
   const rows = paddedStudents(students, rowsCount, `grade-${className}-${subjectName}`);
   const terms = [
     { name: "الفصل الدراسي الأول", months: ["أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول"] },
     { name: "الفصل الدراسي الثاني", months: ["شباط", "آذار", "نيسان", "أيار"] },
   ];
 
-  return <>{terms.map((term, termIndex) => (
+  return <>{terms.map((term, termIndex) => {
+    const termNumber = termIndex === 1 ? 2 : 1;
+    const marksFor = (student: PrintStudent) => {
+      if (student.name === "" || !marks) return EMPTY_MARKS;
+      return marks[student.id]?.[termNumber] ?? EMPTY_MARKS;
+    };
+
+    return (
     <article className="print-page register-page" key={term.name}>
       <RegisterHeader profile={profile} teacherName={teacherName} />
       <h1 className="register-title">{term.name}</h1>
@@ -71,21 +88,26 @@ export function GradebookPages({ profile, teacherName, className, subjectName, s
             <tr>
               <th rowSpan={2} className="number-col">الرقم</th>
               <th rowSpan={2} className="name-col">اسم الطالب</th>
-              <th>اختبار<br />قصير 1</th>
-              <th>اختبار<br />نصف الفصل</th>
-              <th>اختبار<br />قصير 2</th>
-              <th>التقويم<br />النوعي</th>
-              <th>اختبار<br />نهاية الفصل</th>
+              {GRADE_SECTIONS.map((section) => <th key={section.key}>{section.printLines[0]}<br />{section.printLines[1]}</th>)}
               <th rowSpan={2} className="semester-total-head">مجموع علامات<br />{term.name.replace("الدراسي ", "")}</th>
-              {termIndex === 1 ? <th rowSpan={2} className="completion-head">علامة<br />الإكمال</th> : null}
+              {termNumber === 2 ? <th rowSpan={2} className="completion-head">علامة<br />الإكمال</th> : null}
             </tr>
-            <tr className="weight-row"><th>10%</th><th>20%</th><th>10%</th><th>20%</th><th>40%</th></tr>
+            <tr className="weight-row">{GRADE_SECTIONS.map((section) => <th key={section.key}>{section.weight}</th>)}</tr>
           </thead>
-          <tbody>{rows.map((student, index) => <tr key={student.id}><td>{index + 1}</td><td className="name-col">{student.name}</td>{Array.from({ length: termIndex === 1 ? 7 : 6 }, (_, cell) => <td key={cell}></td>)}</tr>)}</tbody>
+          <tbody>{rows.map((student, index) => {
+            const values = marksFor(student);
+            return <tr key={student.id}>
+              <td>{index + 1}</td>
+              <td className="name-col">{student.name}</td>
+              {GRADE_SECTIONS.map((section) => <td className="mark-cell" key={section.key}>{formatMark(values[section.key])}</td>)}
+              <td className="mark-total">{hasAnyMark(values) ? markTotal(values) : ""}</td>
+              {termNumber === 2 ? <td className="mark-cell">{formatMark(values.completion)}</td> : null}
+            </tr>;
+          })}</tbody>
         </table>
       )}
     </article>
-  ))}</>;
+  );})}</>;
 }
 
 export function StudentStatusPage({ profile, className, students, rowsCount }: { profile: Profile; className: string; students: PrintStudent[]; rowsCount: number }) {
