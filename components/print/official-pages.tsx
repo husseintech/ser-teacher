@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { GradeWeightEditor } from "@/components/print/grade-weight-editor";
 import { ACADEMIC_MONTHS, arabicWeekday, isWeekend, monthDays, monthYear } from "@/lib/constants";
 
 type Profile = { schoolName: string; schoolNationalId: string; directorate: string; academicYear: string };
@@ -45,18 +46,39 @@ function RegisterHeader({ profile, teacherName }: { profile: Profile; teacherNam
   );
 }
 
-export function GradebookPages({ profile, teacherName, className, subjectName, students, rowsCount, stage }: { profile: Profile; teacherName: string; className: string; subjectName: string; students: PrintStudent[]; rowsCount: number; stage: "basic" | "upper" }) {
+export function GradebookPages({ profile, teacherName, className, subjectName, students, rowsCount, stage, classId, subjectId, academicYear, weights }: {
+  profile: Profile;
+  teacherName: string;
+  className: string;
+  subjectName: string;
+  students: PrintStudent[];
+  rowsCount: number;
+  stage: "basic" | "upper";
+  classId: string;
+  subjectId: string;
+  academicYear: string;
+  weights?: { shortExam1: number; midtermExam: number; shortExam2: number; qualitative: number; finalExam: number };
+}) {
   const rows = paddedStudents(students, rowsCount, `grade-${className}-${subjectName}`);
   const terms = [
     { name: "الفصل الدراسي الأول", months: ["أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول"] },
     { name: "الفصل الدراسي الثاني", months: ["شباط", "آذار", "نيسان", "أيار"] },
   ];
+  const gradeWeights = weights ?? { shortExam1: 10, midtermExam: 20, shortExam2: 10, qualitative: 20, finalExam: 40 };
 
   return <>{terms.map((term, termIndex) => (
     <article className="print-page register-page" key={term.name}>
       <RegisterHeader profile={profile} teacherName={teacherName} />
       <h1 className="register-title">{term.name}</h1>
       <div className="register-meta"><strong>{className}</strong><strong>المبحث: {subjectName}</strong></div>
+      {stage === "upper" ? (
+        <GradeWeightEditor
+          classId={classId}
+          subjectId={subjectId}
+          academicYear={academicYear}
+          weights={gradeWeights}
+        />
+      ) : null}
       {stage === "basic" ? (
         <table className="official-table grade-register-table" style={rowStyle(rowsCount)} aria-label={`${term.name} ${className} ${subjectName}`}>
           <thead>
@@ -79,7 +101,7 @@ export function GradebookPages({ profile, teacherName, className, subjectName, s
               <th rowSpan={2} className="semester-total-head">مجموع علامات<br />{term.name.replace("الدراسي ", "")}</th>
               {termIndex === 1 ? <th rowSpan={2} className="completion-head">علامة<br />الإكمال</th> : null}
             </tr>
-            <tr className="weight-row"><th>10%</th><th>20%</th><th>10%</th><th>20%</th><th>40%</th></tr>
+            <tr className="weight-row"><th>{gradeWeights.shortExam1}%</th><th>{gradeWeights.midtermExam}%</th><th>{gradeWeights.shortExam2}%</th><th>{gradeWeights.qualitative}%</th><th>{gradeWeights.finalExam}%</th></tr>
           </thead>
           <tbody>{rows.map((student, index) => <tr key={student.id}><td>{index + 1}</td><td className="name-col">{student.name}</td>{Array.from({ length: termIndex === 1 ? 7 : 6 }, (_, cell) => <td key={cell}></td>)}</tr>)}</tbody>
         </table>
