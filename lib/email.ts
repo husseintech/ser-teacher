@@ -48,3 +48,9 @@ export async function verifiedEmailFromToken(accessToken: string) {
   if (error || !data.user?.email) throw new Error("رابط التأكيد غير صالح أو انتهت صلاحيته.");
   return data.user.email.toLowerCase();
 }
+
+export async function emailFromRecoveryCode(code: string) {
+  const { data, error } = await authClient().auth.exchangeCodeForSession(code);
+  if (error || !data.user?.email) throw new Error("رابط الاستعادة غير صالح أو انتهت صلاحيته.");
+  return data.user.email.toLowerCase();
+}

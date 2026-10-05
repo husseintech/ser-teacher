@@ -16,22 +16,37 @@ export function UpdatePasswordForm() {
 
   useEffect(() => {
     const recover = async () => {
+      // Supabase delivers the token in the hash (implicit) or the query (pkce).
       const hash = new URLSearchParams(window.location.hash.slice(1));
-      const accessToken = hash.get("access_token");
-      if (!accessToken) {
+      const query = new URLSearchParams(window.location.search);
+
+      const otpError = hash.get("error_description") || query.get("error_description");
+      if (otpError) {
         setStatus("failed");
-        setProblem("رابط الاستعادة غير صالح أو انتهت صلاحيته. اطلب رابطاً جديداً.");
+        setProblem(decodeURIComponent(otpError.replace(/\+/g, " ")));
         return;
       }
+
+      const accessToken = hash.get("access_token") || query.get("access_token");
+      const code = hash.get("code") || query.get("code");
+      if (!accessToken && !code) {
+        setStatus("failed");
+        setProblem(
+          "لم يصلنا رمز الاستعادة مع الرابط. غالباً لم يُضف /update-password في Supabase ← Authentication ← URL Configuration ← Redirect URLs.",
+        );
+        return;
+      }
+
       try {
         const response = await fetch("/api/auth/recover", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ accessToken }),
+          body: JSON.stringify(accessToken ? { accessToken } : { code }),
         });
+        const result = (await response.json()) as { message?: string };
         if (!response.ok) {
           setStatus("failed");
-          setProblem("تعذر فتح رابط الاستعادة. اطلب رابطاً جديداً.");
+          setProblem(result.message ?? "تعذر فتح رابط الاستعادة. اطلب رابطاً جديداً.");
           return;
         }
         window.history.replaceState(null, "", "/update-password");
