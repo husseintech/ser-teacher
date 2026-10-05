@@ -266,6 +266,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .anonymous-message-trigger { position: fixed; left: 22px; bottom: 22px; z-index: 70; min-height: 48px; display: inline-flex; align-items: center; gap: 9px; padding: 10px 16px; color: #fff; background: var(--green); border: 0; border-radius: 999px; box-shadow: 0 12px 30px rgba(7,92,71,.3); font-weight: 800; cursor: pointer; transition: transform .18s ease, background .18s ease; }
 .anonymous-message-trigger:hover { transform: translateY(-2px); background: var(--green-dark); }
 .anonymous-message-dialog { width: min(calc(100% - 28px), 570px); max-height: min(88vh, 720px); margin: auto; padding: 0; color: var(--ink); background: #fff; border: 0; border-radius: 20px; box-shadow: 0 28px 80px rgba(7,28,40,.3); overflow: auto; }
+.admin-password-dialog { width: min(calc(100% - 28px), 520px); max-height: min(88vh, 720px); margin: auto; padding: 0; color: var(--ink); background: #fff; border: 0; border-radius: 20px; box-shadow: 0 28px 80px rgba(7,28,40,.3); overflow: auto; }
+.admin-password-dialog::backdrop { background: rgba(7,24,34,.67); backdrop-filter: blur(3px); }
+.admin-password-dialog > form { margin: 20px 22px 24px; }
 .anonymous-message-dialog::backdrop { background: rgba(7,24,34,.67); backdrop-filter: blur(3px); }
 .message-dialog-header { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 20px 22px; color: #fff; background: var(--navy); }
 .message-dialog-header > div { display: flex; align-items: center; gap: 11px; }

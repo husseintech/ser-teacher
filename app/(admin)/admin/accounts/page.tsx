@@ -1,5 +1,6 @@
 import { and, countDistinct, desc, eq } from "drizzle-orm";
 import { CheckCircle2, Clock3, UsersRound, XCircle } from "lucide-react";
+import { SetTeacherPasswordButton } from "@/components/admin/set-teacher-password-button";
 import { getDb } from "@/db";
 import { classes, students, teacherProfiles, users } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth";
@@ -50,7 +51,7 @@ export default async function AccountsPage() {
         {accounts.length ? (
           <div className="data-table-wrap">
             <table className="data-table admin-accounts-table">
-              <thead><tr><th>المعلم</th><th>حالة البريد</th><th>المدرسة</th><th>الصفوف</th><th>الطلاب</th><th>تاريخ التسجيل</th><th>آخر دخول</th></tr></thead>
+              <thead><tr><th>المعلم</th><th>حالة البريد</th><th>المدرسة</th><th>الصفوف</th><th>الطلاب</th><th>تاريخ التسجيل</th><th>آخر دخول</th><th>كلمة المرور</th></tr></thead>
               <tbody>
                 {accounts.map((account) => (
                   <tr key={account.id}>
@@ -61,6 +62,7 @@ export default async function AccountsPage() {
                     <td>{account.studentCount}</td>
                     <td>{formatDate(account.createdAt)}</td>
                     <td><span className="last-login"><Clock3 size={14} />{formatDate(account.lastLoginAt)}</span></td>
+                    <td><SetTeacherPasswordButton teacherId={account.id} teacherName={account.fullName} /></td>
                   </tr>
                 ))}
               </tbody>

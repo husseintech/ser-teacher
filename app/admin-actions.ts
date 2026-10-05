@@ -1,7 +1,7 @@
 "use server";
 
 import bcrypt from "bcryptjs";
-import { count, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getDb } from "@/db";
@@ -13,6 +13,7 @@ import {
   classes,
   gradebooks,
   gradeRecords,
+  sessions,
   students,
   subjects,
   teacherProfiles,
@@ -25,6 +26,48 @@ import { requireAdmin } from "@/lib/auth";
 
 const RESET_PHRASE = "حذف جميع حسابات المعلمين";
 const MESSAGE_RESET_PHRASE = "حذف جميع الرسائل المجهولة";
+
+const newPasswordSchema = z
+  .string()
+  .min(8, "كلمة المرور يجب أن تكون 8 أحرف على الأقل.")
+  .regex(/[A-Za-z]/, "أضف حرفًا إنجليزيًا واحدًا على الأقل.")
+  .regex(/[0-9]/, "أضف رقمًا واحدًا على الأقل.");
+
+export async function setTeacherPasswordAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const admin = await requireAdmin();
+
+  try {
+    const teacherId = z.string().uuid().parse(formData.get("teacherId"));
+    const password = newPasswordSchema.parse(formData.get("password"));
+    const confirmation = z.string().parse(formData.get("passwordConfirmation"));
+    if (password !== confirmation) return { ok: false, message: "كلمتا المرور غير متطابقتين." };
+
+    const db = getDb();
+    const [teacher] = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.id, teacherId), eq(users.role, "teacher")))
+      .limit(1);
+    if (!teacher) return { ok: false, message: "تعذّر العثور على حساب المعلم." };
+
+    await db
+      .update(users)
+      .set({ passwordHash: await bcrypt.hash(password, 12), updatedAt: new Date() })
+      .where(eq(users.id, teacher.id));
+
+    // إنهاء جلسات المعلم حتى لا تبقى أي أجهزة مسجّلة بالكلمة السابقة.
+    await db.delete(sessions).where(eq(sessions.userId, teacher.id));
+    await writeAuditLog(admin, "teacher_password_set", "تعيين كلمة مرور معلم", {
+      teacherId: teacher.id,
+    });
+    revalidatePath("/admin/accounts");
+
+    return { ok: true, message: `تم تعيين كلمة المرور للمعلم ${teacher.fullName}. أعطِه الكلمة ليسجّل الدخول بها.` };
+  } catch (error) {
+    if (error instanceof z.ZodError) return { ok: false, message: error.issues[0]?.message ?? "تحقق من البيانات." };
+    return { ok: false, message: error instanceof Error ? error.message : "تعذّر تعيين كلمة المرور." };
+  }
+}
 
 export async function setAnonymousMessageStatusAction(formData: FormData) {
   const admin = await requireAdmin();
