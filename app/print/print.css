@@ -157,6 +157,7 @@
 }
 
 .screen-only { display: block; }
+.print-export-bar { display: flex; justify-content: flex-end; gap: 8px; margin: 0 auto 12px; padding: 0 12px; max-width: 210mm; }
 .grade-weight-editor { margin: 2mm 0 2.5mm; padding: 2.5mm; border: 1px solid #999; border-radius: 6px; background: #f8f8f8; }
 .grade-weight-editor-summary { display: flex; align-items: center; justify-content: space-between; gap: 3mm; font-size: 8pt; }
 .grade-weight-editor-fields { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2mm; margin-top: 2mm; }

@@ -1,6 +1,6 @@
 import { and, asc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { PrintToolbar } from "@/components/print/print-toolbar";
+import { GradebookExportButton, PrintToolbar } from "@/components/print/print-toolbar";
 import {
   AttendanceMonthPage,
   AttendanceSummaryPages,
@@ -176,5 +176,16 @@ export default async function PrintPage({
 
   await writeAuditLog(user, "print_opened", "فتح نموذج للطباعة", { type, section });
 
-  return <main className="print-root"><PrintToolbar />{content}</main>;
+  const isGradebookRecords = type === "gradebook" && id === "all" && section === "records";
+
+  return (
+    <main className="print-root">
+      {isGradebookRecords ? (
+        <div className="screen-only print-export-bar">
+          <GradebookExportButton stage={query.stage === "upper" ? "upper" : "basic"} rowsCount={query.rows ? Number(query.rows) || 40 : 40} />
+        </div>
+      ) : null}
+      <PrintToolbar />{content}
+    </main>
+  );
 }

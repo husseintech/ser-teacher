@@ -1,6 +1,19 @@
 "use client";
 
-import { ArrowRight, Printer } from "lucide-react";
+import { ArrowRight, Printer, Sheet } from "lucide-react";
+
+export function GradebookExportButton({ stage, rowsCount }: { stage: "basic" | "upper"; rowsCount: number }) {
+  return (
+    <a
+      className="btn btn-primary btn-small"
+      href={`/api/export/gradebook?stage=${stage}&rows=${rowsCount}`}
+      download
+      title="تصدير دفتر العلامات إلى ملف Excel"
+    >
+      <Sheet size={15} />تصدير إلى Excel
+    </a>
+  );
+}
 
 export function PrintToolbar() {
   return (
