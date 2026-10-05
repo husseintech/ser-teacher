@@ -262,15 +262,13 @@ export async function updateGradebookWeightsAction(_: ActionState, formData: For
     const classId = z.string().uuid().parse(formData.get("classId"));
     const subjectId = z.string().uuid().parse(formData.get("subjectId"));
     const academicYear = z.string().trim().min(9).parse(formData.get("academicYear"));
-    const weightSchema = z.coerce.number().int().min(0).max(100);
+    // بعض المواد مجموع علاماتها 150 أو 200، لذا تُقبل أي قيمة دون اشتراط المجموع.
+    const weightSchema = z.coerce.number().int().min(0).max(1000);
     const shortExam1Weight = weightSchema.parse(formData.get("shortExam1Weight"));
     const midtermExamWeight = weightSchema.parse(formData.get("midtermExamWeight"));
     const shortExam2Weight = weightSchema.parse(formData.get("shortExam2Weight"));
     const qualitativeWeight = weightSchema.parse(formData.get("qualitativeWeight"));
     const finalExamWeight = weightSchema.parse(formData.get("finalExamWeight"));
-    if (shortExam1Weight + midtermExamWeight + shortExam2Weight + qualitativeWeight + finalExamWeight !== 100) {
-      return { ok: false, message: "يجب أن يكون مجموع الأوزان 100%." };
-    }
 
     const db = getDb();
     const [assignment] = await db

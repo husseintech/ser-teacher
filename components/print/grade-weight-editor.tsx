@@ -58,14 +58,14 @@ export function GradeWeightEditor({
           <input type="hidden" name="subjectId" value={subjectId} />
           <input type="hidden" name="academicYear" value={academicYear} />
           <div className="grade-weight-editor-fields">
-            <label className="grade-weight-editor-field">اختبار قصير 1<input name="shortExam1Weight" type="number" min="0" max="100" defaultValue={weights.shortExam1} required /></label>
-            <label className="grade-weight-editor-field">اختبار نصف الفصل<input name="midtermExamWeight" type="number" min="0" max="100" defaultValue={weights.midtermExam} required /></label>
-            <label className="grade-weight-editor-field">اختبار قصير 2<input name="shortExam2Weight" type="number" min="0" max="100" defaultValue={weights.shortExam2} required /></label>
-            <label className="grade-weight-editor-field">التقويم النوعي<input name="qualitativeWeight" type="number" min="0" max="100" defaultValue={weights.qualitative} required /></label>
-            <label className="grade-weight-editor-field">اختبار نهاية الفصل<input name="finalExamWeight" type="number" min="0" max="100" defaultValue={weights.finalExam} required /></label>
+            <label className="grade-weight-editor-field">اختبار قصير 1<input name="shortExam1Weight" type="number" min="0" max="1000" defaultValue={weights.shortExam1} required /></label>
+            <label className="grade-weight-editor-field">اختبار نصف الفصل<input name="midtermExamWeight" type="number" min="0" max="1000" defaultValue={weights.midtermExam} required /></label>
+            <label className="grade-weight-editor-field">اختبار قصير 2<input name="shortExam2Weight" type="number" min="0" max="1000" defaultValue={weights.shortExam2} required /></label>
+            <label className="grade-weight-editor-field">التقويم النوعي<input name="qualitativeWeight" type="number" min="0" max="1000" defaultValue={weights.qualitative} required /></label>
+            <label className="grade-weight-editor-field">اختبار نهاية الفصل<input name="finalExamWeight" type="number" min="0" max="1000" defaultValue={weights.finalExam} required /></label>
           </div>
           <div className="grade-weight-editor-actions">
-            <span>يجب أن يكون مجموع الأوزان 100%.</span>
+            <span>اكتب مجموع علامات المادة كما هو، دون اشتراط 100.</span>
             <button className="btn btn-primary btn-small" disabled={pending} type="submit">
               <Save size={15} />{pending ? "جارٍ الحفظ..." : "حفظ الأوزان"}
             </button>

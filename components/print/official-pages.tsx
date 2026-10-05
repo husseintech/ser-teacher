@@ -104,7 +104,7 @@ export function GradebookPages({ profile, teacherName, className, subjectName, s
               <th rowSpan={2} className="semester-total-head">مجموع علامات<br />{term.name.replace("الدراسي ", "")}</th>
               {termIndex === 1 ? <th rowSpan={2} className="completion-head">علامة<br />الإكمال</th> : null}
             </tr>
-            <tr className="weight-row"><th>{gradeWeights.shortExam1}%</th><th>{gradeWeights.midtermExam}%</th><th>{gradeWeights.shortExam2}%</th><th>{gradeWeights.qualitative}%</th><th>{gradeWeights.finalExam}%</th></tr>
+            <tr className="weight-row"><th>{gradeWeights.shortExam1}</th><th>{gradeWeights.midtermExam}</th><th>{gradeWeights.shortExam2}</th><th>{gradeWeights.qualitative}</th><th>{gradeWeights.finalExam}</th></tr>
           </thead>
           <tbody>{rows.map((student, index) => <tr key={student.id}><td>{index + 1}</td><td className="name-col">{student.name}</td>{Array.from({ length: termIndex === 1 ? 7 : 6 }, (_, cell) => <td key={cell}></td>)}</tr>)}</tbody>
         </table>
