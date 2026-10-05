@@ -117,6 +117,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .auth-card .lead { margin: 0 0 24px; color: var(--muted); }
 .auth-footer { text-align: center; margin-top: 18px; color: var(--muted); }
 .auth-footer a { color: var(--green-dark); font-weight: 700; }
+.auth-forgot-link { display: block; text-align: center; margin-top: -4px; color: var(--green-dark); font-weight: 700; font-size: 14px; }
 
 .form-grid { display: grid; gap: 17px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }

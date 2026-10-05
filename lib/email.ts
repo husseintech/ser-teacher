@@ -29,6 +29,20 @@ export async function sendVerificationEmail(email: string, fullName: string) {
   return { delivered: true };
 }
 
+export async function sendPasswordResetEmail(email: string) {
+  const { error } = await authClient().auth.resetPasswordForEmail(email, {
+    redirectTo: `${siteUrl()}/update-password`,
+  });
+  if (error) {
+    throw new Error(
+      error.message.includes("rate")
+        ? "يرجى الانتظار قليلًا قبل طلب رابط جديد."
+        : "تعذر إرسال رابط الاستعادة الآن. حاول بعد قليل.",
+    );
+  }
+  return { delivered: true };
+}
+
 export async function verifiedEmailFromToken(accessToken: string) {
   const { data, error } = await authClient().auth.getUser(accessToken);
   if (error || !data.user?.email) throw new Error("رابط التأكيد غير صالح أو انتهت صلاحيته.");

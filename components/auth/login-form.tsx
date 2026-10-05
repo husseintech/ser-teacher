@@ -19,6 +19,7 @@ export function LoginForm() {
       </div>
       {state.message && <div className="alert alert-error" role="alert">{state.message}{state.email && <> <Link href={`/verify?email=${encodeURIComponent(state.email)}`}>إرسال رابط التأكيد</Link></>}</div>}
       <button className="btn btn-primary" disabled={pending} type="submit">{pending ? "جارٍ الدخول..." : "تسجيل الدخول"}</button>
+      <Link className="auth-forgot-link" href="/forgot-password">نسيت كلمة المرور؟</Link>
     </form>
   );
 }

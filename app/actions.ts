@@ -6,11 +6,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getDb } from "@/db";
-import { classes, gradebooks, students, subjects, teacherProfiles, teachingAssignments, users } from "@/db/schema";
+import { classes, gradebooks, sessions, students, subjects, teacherProfiles, teachingAssignments, users } from "@/db/schema";
 import { writeAuditLog } from "@/lib/audit";
-import { createSession, deleteSession, requireTeacher } from "@/lib/auth";
+import { createSession, deleteSession, requireTeacher, requireUser } from "@/lib/auth";
 import type { ActionState } from "@/lib/action-state";
-import { sendVerificationEmail } from "@/lib/email";
+import { sendPasswordResetEmail, sendVerificationEmail } from "@/lib/email";
 
 const emailSchema = z.string().trim().toLowerCase().email("أدخل بريدًا إلكترونيًا صحيحًا.");
 const passwordSchema = z
@@ -138,6 +138,53 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
 export async function logoutAction() {
   await deleteSession();
   redirect("/login");
+}
+
+const RESET_NEUTRAL = "إن كان البريد مسجّلاً لدينا فسيصلك رابط استعادة خلال دقائق.";
+
+export async function requestPasswordResetAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const email = emailSchema.parse(formData.get("email"));
+    const db = getDb();
+    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+    // رسالة واحدة في كل الحالات، حتى لا يُكشف ما إذا كان البريد مسجلاً أم لا.
+    if (!user) return { ok: true, message: RESET_NEUTRAL };
+
+    await sendPasswordResetEmail(email);
+    return { ok: true, message: RESET_NEUTRAL };
+  } catch (error) {
+    if (error instanceof z.ZodError) return { ok: false, message: error.issues[0]?.message ?? "تحقق من البيانات." };
+    return { ok: false, message: messageFrom(error) };
+  }
+}
+
+export async function updatePasswordAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  // خارج كتلة try عمداً: redirect من requireUser يُبتلع إن وُضع داخلها.
+  const user = await requireUser();
+  try {
+    const password = passwordSchema.parse(formData.get("password"));
+    const confirmation = z.string().parse(formData.get("passwordConfirmation"));
+    if (password !== confirmation) return { ok: false, message: "كلمتا المرور غير متطابقتين." };
+    if (await bcrypt.compare(password, user.passwordHash)) {
+      return { ok: false, message: "كلمة المرور الجديدة مطابقة للقديمة." };
+    }
+
+    const db = getDb();
+    await db
+      .update(users)
+      .set({ passwordHash: await bcrypt.hash(password, 12), updatedAt: new Date() })
+      .where(eq(users.id, user.id));
+
+    // إنهاء كل الجلسات على كل الأجهزة، فتبقى جلسة واحدة جديدة فقط.
+    await db.delete(sessions).where(eq(sessions.userId, user.id));
+    await createSession(user.id);
+    await writeAuditLog(user, "password_changed", "تغيير كلمة المرور");
+    return { ok: true, message: "تم تغيير كلمة المرور بنجاح." };
+  } catch (error) {
+    if (error instanceof z.ZodError) return { ok: false, message: error.issues[0]?.message ?? "تحقق من البيانات." };
+    return { ok: false, message: messageFrom(error) };
+  }
 }
 
 export async function saveProfileAction(formData: FormData) {
