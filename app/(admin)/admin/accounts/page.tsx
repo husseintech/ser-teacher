@@ -51,18 +51,21 @@ export default async function AccountsPage() {
         {accounts.length ? (
           <div className="data-table-wrap">
             <table className="data-table admin-accounts-table">
-              <thead><tr><th>المعلم</th><th>حالة البريد</th><th>المدرسة</th><th>الصفوف</th><th>الطلاب</th><th>تاريخ التسجيل</th><th>آخر دخول</th><th>كلمة المرور</th></tr></thead>
+              <thead><tr><th>المعلم</th><th>حالة البريد</th><th>المدرسة</th><th>الصفوف</th><th>الطلاب</th><th>تاريخ التسجيل</th><th>آخر دخول</th></tr></thead>
               <tbody>
                 {accounts.map((account) => (
                   <tr key={account.id}>
-                    <td><strong>{account.fullName}</strong><small className="table-subtext" dir="ltr">{account.email}</small></td>
+                    <td>
+                      <strong>{account.fullName}</strong>
+                      <small className="table-subtext" dir="ltr">{account.email}</small>
+                      <SetTeacherPasswordButton teacherId={account.id} teacherName={account.fullName} />
+                    </td>
                     <td>{account.emailVerifiedAt ? <span className="badge"><CheckCircle2 size={13} />مؤكد</span> : <span className="badge badge-unverified"><XCircle size={13} />غير مؤكد</span>}</td>
                     <td>{account.schoolName || "لم تُدخل"}</td>
                     <td>{account.classCount}</td>
                     <td>{account.studentCount}</td>
                     <td>{formatDate(account.createdAt)}</td>
                     <td><span className="last-login"><Clock3 size={14} />{formatDate(account.lastLoginAt)}</span></td>
-                    <td><SetTeacherPasswordButton teacherId={account.id} teacherName={account.fullName} /></td>
                   </tr>
                 ))}
               </tbody>
