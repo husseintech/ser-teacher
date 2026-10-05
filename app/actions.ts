@@ -255,74 +255,81 @@ export async function deleteSubjectAction(formData: FormData) {
   revalidatePath("/gradebooks");
 }
 
-export async function updateGradebookWeightsAction(formData: FormData) {
+export async function updateGradebookWeightsAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const user = await requireTeacher();
-  const classId = z.string().uuid().parse(formData.get("classId"));
-  const subjectId = z.string().uuid().parse(formData.get("subjectId"));
-  const academicYear = z.string().trim().min(9).parse(formData.get("academicYear"));
-  const weightSchema = z.coerce.number().int().min(0).max(100);
-  const shortExam1Weight = weightSchema.parse(formData.get("shortExam1Weight"));
-  const midtermExamWeight = weightSchema.parse(formData.get("midtermExamWeight"));
-  const shortExam2Weight = weightSchema.parse(formData.get("shortExam2Weight"));
-  const qualitativeWeight = weightSchema.parse(formData.get("qualitativeWeight"));
-  const finalExamWeight = weightSchema.parse(formData.get("finalExamWeight"));
-  if (shortExam1Weight + midtermExamWeight + shortExam2Weight + qualitativeWeight + finalExamWeight !== 100) {
-    throw new Error("يجب أن يكون مجموع الأوزان 100%.");
-  }
 
-  const db = getDb();
-  const [assignment] = await db
-    .select({ classId: teachingAssignments.classId, subjectId: teachingAssignments.subjectId, stage: classes.stage })
-    .from(teachingAssignments)
-    .innerJoin(classes, eq(classes.id, teachingAssignments.classId))
-    .where(and(
-      eq(teachingAssignments.userId, user.id),
-      eq(teachingAssignments.classId, classId),
-      eq(teachingAssignments.subjectId, subjectId),
-      eq(classes.userId, user.id),
-    ))
-    .limit(1);
-  if (!assignment) throw new Error("هذه المادة غير مرتبطة بالصف.");
+  try {
+    const classId = z.string().uuid().parse(formData.get("classId"));
+    const subjectId = z.string().uuid().parse(formData.get("subjectId"));
+    const academicYear = z.string().trim().min(9).parse(formData.get("academicYear"));
+    const weightSchema = z.coerce.number().int().min(0).max(100);
+    const shortExam1Weight = weightSchema.parse(formData.get("shortExam1Weight"));
+    const midtermExamWeight = weightSchema.parse(formData.get("midtermExamWeight"));
+    const shortExam2Weight = weightSchema.parse(formData.get("shortExam2Weight"));
+    const qualitativeWeight = weightSchema.parse(formData.get("qualitativeWeight"));
+    const finalExamWeight = weightSchema.parse(formData.get("finalExamWeight"));
+    if (shortExam1Weight + midtermExamWeight + shortExam2Weight + qualitativeWeight + finalExamWeight !== 100) {
+      return { ok: false, message: "يجب أن يكون مجموع الأوزان 100%." };
+    }
 
-  await db
-    .insert(gradebooks)
-    .values({
-      userId: user.id,
-      classId,
-      subjectId,
-      academicYear,
-      stage: assignment.stage,
-      shortExam1Weight,
-      midtermExamWeight,
-      shortExam2Weight,
-      qualitativeWeight,
-      finalExamWeight,
-    })
-    .onConflictDoUpdate({
-      target: [gradebooks.userId, gradebooks.classId, gradebooks.subjectId, gradebooks.academicYear],
-      set: {
+    const db = getDb();
+    const [assignment] = await db
+      .select({ classId: teachingAssignments.classId, subjectId: teachingAssignments.subjectId, stage: classes.stage })
+      .from(teachingAssignments)
+      .innerJoin(classes, eq(classes.id, teachingAssignments.classId))
+      .where(and(
+        eq(teachingAssignments.userId, user.id),
+        eq(teachingAssignments.classId, classId),
+        eq(teachingAssignments.subjectId, subjectId),
+        eq(classes.userId, user.id),
+      ))
+      .limit(1);
+    if (!assignment) return { ok: false, message: "هذه المادة غير مرتبطة بالصف." };
+
+    await db
+      .insert(gradebooks)
+      .values({
+        userId: user.id,
+        classId,
+        subjectId,
+        academicYear,
         stage: assignment.stage,
         shortExam1Weight,
         midtermExamWeight,
         shortExam2Weight,
         qualitativeWeight,
         finalExamWeight,
-        updatedAt: new Date(),
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: [gradebooks.userId, gradebooks.classId, gradebooks.subjectId, gradebooks.academicYear],
+        set: {
+          stage: assignment.stage,
+          shortExam1Weight,
+          midtermExamWeight,
+          shortExam2Weight,
+          qualitativeWeight,
+          finalExamWeight,
+          updatedAt: new Date(),
+        },
+      });
 
-  await writeAuditLog(user, "gradebook_weights_updated", "تحديث أوزان دفتر العلامات", {
-    classId,
-    subjectId,
-    academicYear,
-    shortExam1Weight,
-    midtermExamWeight,
-    shortExam2Weight,
-    qualitativeWeight,
-    finalExamWeight,
-  });
-  revalidatePath("/print/gradebook/all/records");
-  revalidatePath("/gradebooks");
+    await writeAuditLog(user, "gradebook_weights_updated", "تحديث أوزان دفتر العلامات", {
+      classId,
+      subjectId,
+      academicYear,
+      shortExam1Weight,
+      midtermExamWeight,
+      shortExam2Weight,
+      qualitativeWeight,
+      finalExamWeight,
+    });
+    revalidatePath("/gradebooks");
+    revalidatePath("/setup");
+    return { ok: true, message: "تم حفظ الأوزان." };
+  } catch (error) {
+    if (error instanceof z.ZodError) return { ok: false, message: error.issues[0]?.message ?? "تحقق من الحقول." };
+    return { ok: false, message: messageFrom(error) };
+  }
 }
 
 export async function addClassAction(formData: FormData) {

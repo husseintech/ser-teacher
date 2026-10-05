@@ -104,6 +104,7 @@ export default async function PrintPage({
     if (section === "cover") {
       content = <OfficialCover title="دفتر العلامات" teacherName={user.fullName} profile={safeProfile} classNames={classNames} subjectNames={subjectNames} />;
     } else if (section === "records") {
+      // الأوزان تُقرأ مرة واحدة لكل (صف + مبحث)، فتظهر نفسها في صفحتَي الفصلين.
       content = <>{assignments.map((assignment) => (
         <GradebookPages
           profile={safeProfile}

@@ -66,19 +66,22 @@ export function GradebookPages({ profile, teacherName, className, subjectName, s
   ];
   const gradeWeights = weights ?? { shortExam1: 10, midtermExam: 20, shortExam2: 10, qualitative: 20, finalExam: 40 };
 
-  return <>{terms.map((term, termIndex) => (
+  return <>
+    {stage === "upper" ? (
+      <GradeWeightEditor
+        classId={classId}
+        subjectId={subjectId}
+        className={className}
+        subjectName={subjectName}
+        academicYear={academicYear}
+        weights={gradeWeights}
+      />
+    ) : null}
+    {terms.map((term, termIndex) => (
     <article className="print-page register-page" key={term.name}>
       <RegisterHeader profile={profile} teacherName={teacherName} />
       <h1 className="register-title">{term.name}</h1>
       <div className="register-meta"><strong>{className}</strong><strong>المبحث: {subjectName}</strong></div>
-      {stage === "upper" ? (
-        <GradeWeightEditor
-          classId={classId}
-          subjectId={subjectId}
-          academicYear={academicYear}
-          weights={gradeWeights}
-        />
-      ) : null}
       {stage === "basic" ? (
         <table className="official-table grade-register-table" style={rowStyle(rowsCount)} aria-label={`${term.name} ${className} ${subjectName}`}>
           <thead>
@@ -107,7 +110,8 @@ export function GradebookPages({ profile, teacherName, className, subjectName, s
         </table>
       )}
     </article>
-  ))}</>;
+  ))}
+  </>;
 }
 
 export function StudentStatusPage({ profile, className, students, rowsCount }: { profile: Profile; className: string; students: PrintStudent[]; rowsCount: number }) {

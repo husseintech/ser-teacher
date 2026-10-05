@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { Save, Settings2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { updateGradebookWeightsAction } from "@/app/actions";
+import { initialActionState } from "@/lib/action-state";
 
 type Weights = {
   shortExam1: number;
@@ -15,26 +17,43 @@ type Weights = {
 export function GradeWeightEditor({
   classId,
   subjectId,
+  className,
+  subjectName,
   academicYear,
   weights,
 }: {
   classId: string;
   subjectId: string;
+  className: string;
+  subjectName: string;
   academicYear: string;
   weights: Weights;
 }) {
+  const [state, action, pending] = useActionState(updateGradebookWeightsAction, initialActionState);
   const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const refreshed = useRef(false);
+
+  // بعد نجاح الحفظ تُعاد قراءة الأوزان من قاعدة البيانات،
+  // فتنعكس على صفحتَي الفصل الأول والفصل الثاني معًا.
+  useEffect(() => {
+    if (!state.ok || refreshed.current) return;
+    refreshed.current = true;
+    router.refresh();
+  }, [state.ok, router]);
 
   return (
     <div className="grade-weight-editor screen-only">
       <div className="grade-weight-editor-summary">
-        <strong>أوزان العلامات الظاهرة باللون الأصفر</strong>
+        <strong>
+          أوزان العلامات: {className} — {subjectName}
+        </strong>
         <button className="btn btn-secondary btn-small" type="button" onClick={() => setOpen((value) => !value)}>
           <Settings2 size={15} />{open ? "إغلاق التعديل" : "تعديل الأوزان"}
         </button>
       </div>
       {open ? (
-        <form action={updateGradebookWeightsAction}>
+        <form action={action}>
           <input type="hidden" name="classId" value={classId} />
           <input type="hidden" name="subjectId" value={subjectId} />
           <input type="hidden" name="academicYear" value={academicYear} />
@@ -47,8 +66,13 @@ export function GradeWeightEditor({
           </div>
           <div className="grade-weight-editor-actions">
             <span>يجب أن يكون مجموع الأوزان 100%.</span>
-            <button className="btn btn-primary btn-small" type="submit"><Save size={15} />حفظ الأوزان</button>
+            <button className="btn btn-primary btn-small" disabled={pending} type="submit">
+              <Save size={15} />{pending ? "جارٍ الحفظ..." : "حفظ الأوزان"}
+            </button>
           </div>
+          {state.message ? (
+            <div className={`alert ${state.ok ? "alert-success" : "alert-error"}`} role="status">{state.message}</div>
+          ) : null}
         </form>
       ) : null}
     </div>
