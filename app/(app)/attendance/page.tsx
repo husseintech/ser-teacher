@@ -6,24 +6,16 @@ import { requireTeacher } from "@/lib/auth";
 
 export const metadata = { title: "الحضور والغياب" };
 
-export default async function AttendancePage() {
+export default async function AttendancePage({ searchParams }: { searchParams: Promise<{ teacherId?: string }> }) {
   const user = await requireTeacher();
+  const query = await searchParams;
   const db = getDb();
-  const [classRows, [profile]] = await Promise.all([
-    db
-      .select({
-        id: classes.id,
-        name: classes.name,
-        stage: classes.stage,
-        studentCount: sql<number>`count(${students.id})::int`,
-      })
-      .from(classes)
-      .leftJoin(students, and(eq(students.classId, classes.id), eq(students.active, true)))
-      .where(eq(classes.userId, user.id))
-      .groupBy(classes.id)
-      .orderBy(asc(classes.name)),
-    db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, user.id)).limit(1),
-  ]);
+  const teacherRows = await db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, user.id)).orderBy(asc(teacherProfiles.createdAt));
+  const profile = teacherRows.find((item) => item.id === query.teacherId) ?? teacherRows[0];
+  if (!profile) return <div className="empty-state">لا يوجد معلم في هذا الحساب.</div>;
+  const classRows = await db.select({ id: classes.id, name: classes.name, stage: classes.stage, studentCount: sql<number>`count(${students.id})::int` })
+    .from(classes).leftJoin(students, and(eq(students.classId, classes.id), eq(students.active, true), eq(students.teacherProfileId, profile.id)))
+    .where(and(eq(classes.userId, user.id), eq(classes.teacherProfileId, profile.id))).groupBy(classes.id).orderBy(asc(classes.name));
 
   return (
     <>
@@ -33,6 +25,8 @@ export default async function AttendancePage() {
           <p>دفتر ورقي فارغ مطابق لآلية منصة المدرسة، من آب حتى حزيران، ومن دون تسجيل حضور إلكتروني.</p>
         </div>
       </header>
+
+      <section className="card" style={{ marginBottom: 18 }}><div className="card-title"><h2>اختيار المعلم</h2></div><form method="get" className="inline-form"><div className="field"><label htmlFor="teacherId">المعلم</label><select className="select" id="teacherId" name="teacherId" defaultValue={profile.id}>{teacherRows.map((teacher) => <option value={teacher.id} key={teacher.id}>{teacher.name}</option>)}</select></div><button className="btn btn-secondary" type="submit">فتح دفاتر المعلم</button></form></section>
 
       <div className="print-note" style={{ marginBottom: 18 }}>
         الغلاف مستقل. الدفتر الكامل 14 صفحة: جدول أحوال الطلاب، 11 شهرًا، الخلاصة السنوية، وجدول الخلاصة.
@@ -70,17 +64,17 @@ export default async function AttendancePage() {
             </label>
 
             <div className="register-summary">
-              <div><span>اسم المعلم</span><strong>{user.fullName}</strong></div>
+              <div><span>اسم المعلم</span><strong>{profile.name}</strong></div>
               <div><span>العام الدراسي</span><strong dir="ltr">{profile?.academicYear ?? "2026/2027"}</strong></div>
               <div><span>الأشهر</span><strong>آب حتى حزيران</strong></div>
               <div><span>صفحات الدفتر</span><strong>14 صفحة</strong></div>
             </div>
 
             <div className="print-actions">
-              <button className="btn btn-secondary" formAction="/print/attendance/class/cover" type="submit">
+              <button className="btn btn-secondary" formAction={`/print/attendance/class/cover?teacherId=${profile.id}`} type="submit">
                 <Printer size={18} />طباعة الغلاف
               </button>
-              <button className="btn btn-dark" formAction="/print/attendance/class/book" type="submit">
+              <button className="btn btn-dark" formAction={`/print/attendance/class/book?teacherId=${profile.id}`} type="submit">
                 <Printer size={18} />طباعة الدفتر كاملًا
               </button>
             </div>
