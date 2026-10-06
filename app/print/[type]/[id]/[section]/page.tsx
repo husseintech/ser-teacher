@@ -17,7 +17,7 @@ import { ACADEMIC_MONTHS } from "@/lib/constants";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "طباعة السجل" };
 
-type PrintQuery = { stage?: string; rows?: string; classId?: string; shadeAugust?: string };
+type PrintQuery = { stage?: string; rows?: string; classId?: string; shadeAugust?: string; teacherId?: string };
 
 function safeRows(value: string | undefined, fallback: number) {
   const parsed = Number(value);
@@ -35,9 +35,13 @@ export default async function PrintPage({
   const { type, id, section } = await params;
   const query = await searchParams;
   const db = getDb();
-  const [profile] = await db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, user.id)).limit(1);
+  const teacherRows = await db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, user.id)).orderBy(asc(teacherProfiles.createdAt));
+  const profile = teacherRows.find((item) => item.id === query.teacherId) ?? teacherRows[0];
+  if (!profile) notFound();
   const safeProfile = profile ?? {
     userId: user.id,
+    id: "",
+    name: user.fullName,
     schoolName: "",
     schoolNationalId: "",
     directorate: "يطا",
@@ -63,7 +67,7 @@ export default async function PrintPage({
       .from(teachingAssignments)
       .innerJoin(classes, eq(classes.id, teachingAssignments.classId))
       .innerJoin(subjects, eq(subjects.id, teachingAssignments.subjectId))
-      .where(and(eq(teachingAssignments.userId, user.id), eq(classes.stage, stage)))
+      .where(and(eq(teachingAssignments.userId, user.id), eq(teachingAssignments.teacherProfileId, safeProfile.id), eq(classes.stage, stage), eq(classes.teacherProfileId, safeProfile.id)))
       .orderBy(asc(classes.name), asc(subjects.name));
 
     if (!assignments.length) notFound();
@@ -78,7 +82,7 @@ export default async function PrintPage({
         finalExamWeight: gradebooks.finalExamWeight,
       })
       .from(gradebooks)
-      .where(and(eq(gradebooks.userId, user.id), eq(gradebooks.academicYear, safeProfile.academicYear)));
+      .where(and(eq(gradebooks.userId, user.id), eq(gradebooks.teacherProfileId, safeProfile.id), eq(gradebooks.academicYear, safeProfile.academicYear)));
     const weightsByAssignment = new Map(
       gradebookRows.map((row) => [
         `${row.classId}:${row.subjectId}`,
@@ -95,20 +99,20 @@ export default async function PrintPage({
     const studentRows = await db
       .select({ id: students.id, name: students.name, classId: students.classId, status: students.status })
       .from(students)
-      .where(and(eq(students.userId, user.id), eq(students.active, true)))
+      .where(and(eq(students.userId, user.id), eq(students.teacherProfileId, safeProfile.id), eq(students.active, true)))
       .orderBy(asc(students.position));
     const relevantStudents = studentRows.filter((student) => classIds.includes(student.classId));
     const classNames = [...new Set(assignments.map((item) => item.className))];
     const subjectNames = [...new Set(assignments.map((item) => item.subjectName))];
 
     if (section === "cover") {
-      content = <OfficialCover title="دفتر العلامات" teacherName={user.fullName} profile={safeProfile} classNames={classNames} subjectNames={subjectNames} />;
+      content = <OfficialCover title="دفتر العلامات" teacherName={safeProfile.name} profile={safeProfile} classNames={classNames} subjectNames={subjectNames} />;
     } else if (section === "records") {
       // الأوزان تُقرأ مرة واحدة لكل (صف + مبحث)، فتظهر نفسها في صفحتَي الفصلين.
       content = <>{assignments.map((assignment) => (
         <GradebookPages
           profile={safeProfile}
-          teacherName={user.fullName}
+          teacherName={safeProfile.name}
           className={assignment.className}
           subjectName={assignment.subjectName}
           students={relevantStudents.filter((student) => student.classId === assignment.classId)}
@@ -132,7 +136,7 @@ export default async function PrintPage({
     const [schoolClass] = await db
       .select({ id: classes.id, name: classes.name })
       .from(classes)
-      .where(and(eq(classes.id, classId), eq(classes.userId, user.id)))
+      .where(and(eq(classes.id, classId), eq(classes.userId, user.id), eq(classes.teacherProfileId, safeProfile.id)))
       .limit(1);
     if (!schoolClass) notFound();
     const studentRows = await db
