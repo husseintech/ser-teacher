@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { BookOpenCheck, Printer } from "lucide-react";
 import { getDb } from "@/db";
 import { classes, subjects, teacherProfiles, teachingAssignments } from "@/db/schema";
@@ -6,24 +6,20 @@ import { requireTeacher } from "@/lib/auth";
 
 export const metadata = { title: "دفتر العلامات" };
 
-export default async function GradebooksPage() {
+export default async function GradebooksPage({ searchParams }: { searchParams: Promise<{ teacherId?: string }> }) {
   const user = await requireTeacher();
+  const query = await searchParams;
   const db = getDb();
-  const [assignments, [profile]] = await Promise.all([
-    db
-      .select({
-        id: teachingAssignments.id,
-        className: classes.name,
-        stage: classes.stage,
-        subjectName: subjects.name,
-      })
-      .from(teachingAssignments)
-      .innerJoin(classes, eq(classes.id, teachingAssignments.classId))
-      .innerJoin(subjects, eq(subjects.id, teachingAssignments.subjectId))
-      .where(eq(teachingAssignments.userId, user.id))
-      .orderBy(asc(classes.name), asc(subjects.name)),
-    db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, user.id)).limit(1),
-  ]);
+  const teacherRows = await db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, user.id)).orderBy(asc(teacherProfiles.createdAt));
+  const profile = teacherRows.find((item) => item.id === query.teacherId) ?? teacherRows[0];
+  if (!profile) return <div className="empty-state">لا يوجد معلم في هذا الحساب.</div>;
+  const assignments = await db
+    .select({ id: teachingAssignments.id, className: classes.name, stage: classes.stage, subjectName: subjects.name })
+    .from(teachingAssignments)
+    .innerJoin(classes, eq(classes.id, teachingAssignments.classId))
+    .innerJoin(subjects, eq(subjects.id, teachingAssignments.subjectId))
+    .where(and(eq(teachingAssignments.userId, user.id), eq(teachingAssignments.teacherProfileId, profile.id)))
+    .orderBy(asc(classes.name), asc(subjects.name));
 
   const basicCount = assignments.filter((item) => item.stage === "basic").length;
   const upperCount = assignments.filter((item) => item.stage === "upper").length;
@@ -36,6 +32,8 @@ export default async function GradebooksPage() {
           <p>دفتر ورقي فارغ بأسماء الطلاب، مطابق لآلية منصة المدرسة ومن دون إدخال أو حفظ علامات إلكترونيًا.</p>
         </div>
       </header>
+
+      <section className="card" style={{ marginBottom: 18 }}><div className="card-title"><h2>اختيار المعلم</h2></div><form method="get" className="inline-form"><div className="field"><label htmlFor="teacherId">المعلم</label><select className="select" id="teacherId" name="teacherId" defaultValue={profile.id}>{teacherRows.map((teacher) => <option value={teacher.id} key={teacher.id}>{teacher.name}</option>)}</select></div><button className="btn btn-secondary" type="submit">فتح دفتر المعلم</button></form></section>
 
       <div className="print-note" style={{ marginBottom: 18 }}>
         يُطبع الغلاف وحده، ثم تُطبع صفحتان لكل صف ومادة: الفصل الدراسي الأول والفصل الدراسي الثاني. جميع الصفحات A4 بالطول.
@@ -69,17 +67,17 @@ export default async function GradebooksPage() {
             </div>
 
             <div className="register-summary">
-              <div><span>اسم المعلم</span><strong>{user.fullName}</strong></div>
+              <div><span>اسم المعلم</span><strong>{profile.name}</strong></div>
               <div><span>العام الدراسي</span><strong dir="ltr">{profile?.academicYear ?? "2026/2027"}</strong></div>
               <div><span>المرحلة الأساسية</span><strong>{basicCount * 2} صفحة</strong></div>
               <div><span>من الخامس فما فوق</span><strong>{upperCount * 2} صفحة</strong></div>
             </div>
 
             <div className="print-actions">
-              <button className="btn btn-secondary" formAction="/print/gradebook/all/cover" type="submit">
+              <button className="btn btn-secondary" formAction={`/print/gradebook/all/cover?teacherId=${profile.id}`} type="submit">
                 <Printer size={18} />طباعة الغلاف
               </button>
-              <button className="btn btn-dark" formAction="/print/gradebook/all/records" type="submit">
+              <button className="btn btn-dark" formAction={`/print/gradebook/all/records?teacherId=${profile.id}`} type="submit">
                 <Printer size={18} />طباعة صفحات العلامات
               </button>
             </div>
