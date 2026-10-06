@@ -132,7 +132,7 @@ export async function GET(request: Request) {
 
       sheet.mergeCells(1, 1, 1, lastColumn);
       const titleCell = sheet.getCell(1, 1);
-      titleCell.value = `${schoolName}   —   المعلم: ${user.fullName}   —   العام الدراسي: ${academicYear}`;
+      titleCell.value = `${schoolName}   —   المعلم: ${profile.name}   —   العام الدراسي: ${academicYear}`;
       titleCell.font = { name: "Arial", size: 13, bold: true };
       titleCell.alignment = { horizontal: "center", vertical: "middle" };
       sheet.getRow(1).height = 24;
