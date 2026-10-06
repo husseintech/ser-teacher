@@ -10,6 +10,22 @@ export function RegisterForm() {
   const router = useRouter();
 
   useEffect(() => {
+    // Some Supabase projects may still have /register as the recovery redirect.
+    // If a recovery token lands here, forward it intact to the password-reset page.
+    const hash = window.location.hash;
+    const query = new URLSearchParams(window.location.search);
+    const isRecovery =
+      hash.includes("access_token=") ||
+      hash.includes("type=recovery") ||
+      query.has("code") ||
+      query.has("access_token") ||
+      query.has("type") && query.get("type") === "recovery";
+
+    if (isRecovery) {
+      window.location.replace(`/update-password${window.location.search}${window.location.hash}`);
+      return;
+    }
+
     if (!state.ok || !state.email) return;
     const params = new URLSearchParams({ email: state.email });
     router.push(`/verify?${params.toString()}`);
