@@ -2,11 +2,11 @@
 
 import { ArrowRight, Printer, Sheet } from "lucide-react";
 
-export function GradebookExportButton({ stage, rowsCount }: { stage: "basic" | "upper"; rowsCount: number }) {
+export function GradebookExportButton({ stage, rowsCount, teacherId }: { stage: "basic" | "upper"; rowsCount: number; teacherId: string }) {
   return (
     <a
       className="btn btn-primary btn-small"
-      href={`/api/export/gradebook?stage=${stage}&rows=${rowsCount}`}
+      href={`/api/export/gradebook?stage=${stage}&rows=${rowsCount}&teacherId=${teacherId}`}
       download
       title="تصدير دفتر العلامات إلى ملف Excel"
     >
