@@ -65,7 +65,7 @@ export async function registerAction(_: ActionState, formData: FormData): Promis
         .values({ fullName, email, birthDate, passwordHash })
         .returning({ id: users.id });
       userId = created.id;
-      await db.insert(teacherProfiles).values({ userId }).onConflictDoNothing();
+      await db.insert(teacherProfiles).values({ userId, name: fullName });
     }
 
     if (!userId) throw new Error("تعذر إنشاء الحساب.");
@@ -187,8 +187,23 @@ export async function updatePasswordAction(_: ActionState, formData: FormData): 
   }
 }
 
+export async function addTeacherAction(formData: FormData) {
+  const user = await requireTeacher();
+  const name = z.string().trim().min(4).parse(formData.get("name"));
+  const sourceTeacherId = z.string().uuid().optional().parse(formData.get("teacherId") || undefined);
+  const db = getDb();
+  const [source] = sourceTeacherId
+    ? await db.select().from(teacherProfiles).where(and(eq(teacherProfiles.id, sourceTeacherId), eq(teacherProfiles.userId, user.id))).limit(1)
+    : await db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, user.id)).orderBy(teacherProfiles.createdAt).limit(1);
+  await db.insert(teacherProfiles).values({ userId: user.id, name, schoolName: source?.schoolName ?? "", schoolNationalId: source?.schoolNationalId ?? "", directorate: source?.directorate ?? "يطا", academicYear: source?.academicYear ?? "2026/2027" });
+  await writeAuditLog(user, "teacher_profile_added", "إضافة معلم داخل الحساب", { teacherName: name });
+  revalidatePath("/setup");
+  revalidatePath("/dashboard");
+}
+
 export async function saveProfileAction(formData: FormData) {
   const user = await requireTeacher();
+  const teacherId = z.string().uuid().parse(formData.get("teacherId"));
   const schoolName = z.string().trim().min(2).parse(formData.get("schoolName"));
   const schoolNationalId = z.string().trim().min(2).parse(formData.get("schoolNationalId"));
   const directorate = z.string().trim().min(2).parse(formData.get("directorate"));
@@ -196,14 +211,10 @@ export async function saveProfileAction(formData: FormData) {
   const [startYear, endYear] = academicYear.split(/[/\\-]/).map((value) => Number(value.trim()));
   if (endYear !== startYear + 1) throw new Error("العام الدراسي يجب أن يكون على صورة 2026/2027.");
   const db = getDb();
-  await db
-    .insert(teacherProfiles)
-    .values({ userId: user.id, schoolName, schoolNationalId, directorate, academicYear })
-    .onConflictDoUpdate({
-      target: teacherProfiles.userId,
-      set: { schoolName, schoolNationalId, directorate, academicYear, updatedAt: new Date() },
-    });
-  await writeAuditLog(user, "profile_updated", "تحديث بيانات المدرسة", { schoolName, academicYear });
+  const [owned] = await db.select({ id: teacherProfiles.id }).from(teacherProfiles).where(and(eq(teacherProfiles.id, teacherId), eq(teacherProfiles.userId, user.id))).limit(1);
+  if (!owned) throw new Error("المعلم غير موجود.");
+  await db.update(teacherProfiles).set({ schoolName, schoolNationalId, directorate, academicYear, updatedAt: new Date() }).where(eq(teacherProfiles.id, teacherId));
+  await writeAuditLog(user, "profile_updated", "تحديث بيانات المدرسة", { teacherId, schoolName, academicYear });
   revalidatePath("/setup");
   revalidatePath("/dashboard");
 }
@@ -211,7 +222,11 @@ export async function saveProfileAction(formData: FormData) {
 export async function addSubjectAction(formData: FormData) {
   const user = await requireTeacher();
   const name = z.string().trim().min(2).parse(formData.get("name"));
-  await getDb().insert(subjects).values({ userId: user.id, name }).onConflictDoNothing();
+  const teacherId = z.string().uuid().parse(formData.get("teacherId"));
+  const db = getDb();
+  const [teacher] = await db.select({ id: teacherProfiles.id }).from(teacherProfiles).where(and(eq(teacherProfiles.id, teacherId), eq(teacherProfiles.userId, user.id))).limit(1);
+  if (!teacher) throw new Error("المعلم غير موجود.");
+  await db.insert(subjects).values({ userId: user.id, teacherProfileId: teacherId, name }).onConflictDoNothing();
   await writeAuditLog(user, "subject_added", "إضافة مادة", { subject: name });
   revalidatePath("/setup");
 }
@@ -219,18 +234,19 @@ export async function addSubjectAction(formData: FormData) {
 export async function updateSubjectAction(formData: FormData) {
   const user = await requireTeacher();
   const subjectId = z.string().uuid().parse(formData.get("subjectId"));
+  const teacherId = z.string().uuid().parse(formData.get("teacherId"));
   const name = z.string().trim().min(2).parse(formData.get("name"));
   const db = getDb();
   const [owned] = await db
     .select({ id: subjects.id })
     .from(subjects)
-    .where(and(eq(subjects.id, subjectId), eq(subjects.userId, user.id)))
+    .where(and(eq(subjects.id, subjectId), eq(subjects.userId, user.id), eq(subjects.teacherProfileId, teacherId)))
     .limit(1);
   if (!owned) throw new Error("المادة غير موجودة.");
   const [duplicate] = await db
     .select({ id: subjects.id })
     .from(subjects)
-    .where(and(eq(subjects.userId, user.id), eq(subjects.name, name)))
+    .where(and(eq(subjects.userId, user.id), eq(subjects.teacherProfileId, teacherId), eq(subjects.name, name)))
     .limit(1);
   if (duplicate && duplicate.id !== subjectId) throw new Error("هذه المادة موجودة مسبقًا.");
   await db.update(subjects).set({ name, updatedAt: new Date() }).where(eq(subjects.id, subjectId));
@@ -242,11 +258,12 @@ export async function updateSubjectAction(formData: FormData) {
 export async function deleteSubjectAction(formData: FormData) {
   const user = await requireTeacher();
   const subjectId = z.string().uuid().parse(formData.get("subjectId"));
+  const teacherId = z.string().uuid().parse(formData.get("teacherId"));
   const db = getDb();
   const [owned] = await db
     .select({ id: subjects.id, name: subjects.name })
     .from(subjects)
-    .where(and(eq(subjects.id, subjectId), eq(subjects.userId, user.id)))
+    .where(and(eq(subjects.id, subjectId), eq(subjects.userId, user.id), eq(subjects.teacherProfileId, teacherId)))
     .limit(1);
   if (!owned) throw new Error("المادة غير موجودة.");
   await db.delete(subjects).where(eq(subjects.id, subjectId));
@@ -260,6 +277,7 @@ export async function updateGradebookWeightsAction(_: ActionState, formData: For
 
   try {
     const classId = z.string().uuid().parse(formData.get("classId"));
+    const teacherId = z.string().uuid().parse(formData.get("teacherId"));
     const subjectId = z.string().uuid().parse(formData.get("subjectId"));
     const academicYear = z.string().trim().min(9).parse(formData.get("academicYear"));
     // بعض المواد مجموع علاماتها 150 أو 200، لذا تُقبل أي قيمة دون اشتراط المجموع.
@@ -277,9 +295,11 @@ export async function updateGradebookWeightsAction(_: ActionState, formData: For
       .innerJoin(classes, eq(classes.id, teachingAssignments.classId))
       .where(and(
         eq(teachingAssignments.userId, user.id),
+        eq(teachingAssignments.teacherProfileId, teacherId),
         eq(teachingAssignments.classId, classId),
         eq(teachingAssignments.subjectId, subjectId),
         eq(classes.userId, user.id),
+        eq(classes.teacherProfileId, teacherId),
       ))
       .limit(1);
     if (!assignment) return { ok: false, message: "هذه المادة غير مرتبطة بالصف." };
@@ -288,6 +308,7 @@ export async function updateGradebookWeightsAction(_: ActionState, formData: For
       .insert(gradebooks)
       .values({
         userId: user.id,
+        teacherProfileId: teacherId,
         classId,
         subjectId,
         academicYear,
@@ -299,7 +320,7 @@ export async function updateGradebookWeightsAction(_: ActionState, formData: For
         finalExamWeight,
       })
       .onConflictDoUpdate({
-        target: [gradebooks.userId, gradebooks.classId, gradebooks.subjectId, gradebooks.academicYear],
+        target: [gradebooks.teacherProfileId, gradebooks.classId, gradebooks.subjectId, gradebooks.academicYear],
         set: {
           stage: assignment.stage,
           shortExam1Weight,
@@ -334,11 +355,12 @@ export async function addClassAction(formData: FormData) {
   const user = await requireTeacher();
   const name = z.string().trim().min(2).parse(formData.get("name"));
   const stage = z.enum(["basic", "upper"]).parse(formData.get("stage"));
+  const teacherId = z.string().uuid().parse(formData.get("teacherId"));
   await getDb()
     .insert(classes)
-    .values({ userId: user.id, name, stage })
+    .values({ userId: user.id, teacherProfileId: teacherId, name, stage })
     .onConflictDoUpdate({
-      target: [classes.userId, classes.name],
+      target: [classes.teacherProfileId, classes.name],
       set: { stage, updatedAt: new Date() },
     });
   await writeAuditLog(user, "class_saved", "حفظ الصف وتصنيفه", { className: name, stage });
@@ -350,12 +372,13 @@ export async function addClassAction(formData: FormData) {
 export async function updateClassStageAction(formData: FormData) {
   const user = await requireTeacher();
   const classId = z.string().uuid().parse(formData.get("classId"));
+  const teacherId = z.string().uuid().parse(formData.get("teacherId"));
   const stage = z.enum(["basic", "upper"]).parse(formData.get("stage"));
   const db = getDb();
   const [owned] = await db
     .select({ id: classes.id })
     .from(classes)
-    .where(and(eq(classes.id, classId), eq(classes.userId, user.id)))
+    .where(and(eq(classes.id, classId), eq(classes.userId, user.id), eq(classes.teacherProfileId, teacherId)))
     .limit(1);
   if (!owned) throw new Error("الصف غير موجود.");
   await db.update(classes).set({ stage, updatedAt: new Date() }).where(eq(classes.id, classId));
@@ -368,11 +391,12 @@ export async function updateClassStageAction(formData: FormData) {
 export async function deleteClassAction(formData: FormData) {
   const user = await requireTeacher();
   const classId = z.string().uuid().parse(formData.get("classId"));
+  const teacherId = z.string().uuid().parse(formData.get("teacherId"));
   const db = getDb();
   const [owned] = await db
     .select({ id: classes.id, name: classes.name })
     .from(classes)
-    .where(and(eq(classes.id, classId), eq(classes.userId, user.id)))
+    .where(and(eq(classes.id, classId), eq(classes.userId, user.id), eq(classes.teacherProfileId, teacherId)))
     .limit(1);
   if (!owned) throw new Error("الصف غير موجود.");
   await db.delete(classes).where(eq(classes.id, classId));
@@ -387,13 +411,14 @@ export async function assignSubjectAction(formData: FormData) {
   const user = await requireTeacher();
   const classId = z.string().uuid().parse(formData.get("classId"));
   const subjectId = z.string().uuid().parse(formData.get("subjectId"));
+  const teacherId = z.string().uuid().parse(formData.get("teacherId"));
   const db = getDb();
   const [ownedClass, ownedSubject] = await Promise.all([
-    db.select({ id: classes.id }).from(classes).where(and(eq(classes.id, classId), eq(classes.userId, user.id))).limit(1),
-    db.select({ id: subjects.id }).from(subjects).where(and(eq(subjects.id, subjectId), eq(subjects.userId, user.id))).limit(1),
+    db.select({ id: classes.id }).from(classes).where(and(eq(classes.id, classId), eq(classes.userId, user.id), eq(classes.teacherProfileId, teacherId))).limit(1),
+    db.select({ id: subjects.id }).from(subjects).where(and(eq(subjects.id, subjectId), eq(subjects.userId, user.id), eq(subjects.teacherProfileId, teacherId))).limit(1),
   ]);
   if (!ownedClass[0] || !ownedSubject[0]) throw new Error("الصف أو المادة غير متاحين.");
-  await db.insert(teachingAssignments).values({ userId: user.id, classId, subjectId }).onConflictDoNothing();
+  await db.insert(teachingAssignments).values({ userId: user.id, teacherProfileId: teacherId, classId, subjectId }).onConflictDoNothing();
   await writeAuditLog(user, "subject_assigned", "ربط مادة بصف", { classId, subjectId });
   revalidatePath("/setup");
   revalidatePath("/gradebooks");
@@ -402,6 +427,7 @@ export async function assignSubjectAction(formData: FormData) {
 export async function syncRosterAction(formData: FormData) {
   const user = await requireTeacher();
   const classId = z.string().uuid().parse(formData.get("classId"));
+  const teacherId = z.string().uuid().parse(formData.get("teacherId"));
   const rawNames = z.string().parse(formData.get("names"));
   const names = [...new Set(rawNames.split(/\r?\n/).map((name) => name.trim()).filter(Boolean))];
   if (names.length > 50) throw new Error("الحد الأعلى للقائمة الواحدة 50 طالبًا.");
@@ -413,12 +439,12 @@ export async function syncRosterAction(formData: FormData) {
     .limit(1);
   if (!ownedClass) throw new Error("الصف غير متاح.");
 
-  await db.update(students).set({ active: false, updatedAt: new Date() }).where(and(eq(students.classId, classId), eq(students.userId, user.id)));
+  await db.update(students).set({ active: false, updatedAt: new Date() }).where(and(eq(students.classId, classId), eq(students.userId, user.id), eq(students.teacherProfileId, teacherId)));
   for (let index = 0; index < names.length; index += 1) {
     const name = names[index];
     await db
       .insert(students)
-      .values({ userId: user.id, classId, name, position: index + 1, active: true })
+      .values({ userId: user.id, teacherProfileId: teacherId, classId, name, position: index + 1, active: true })
       .onConflictDoUpdate({
         target: [students.classId, students.name],
         set: { position: index + 1, active: true, updatedAt: new Date() },
