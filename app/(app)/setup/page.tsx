@@ -122,6 +122,7 @@ export default async function SetupPage() {
             const roster = studentRows.filter((student) => student.classId === schoolClass.id);
             return (
               <form action={syncRosterAction} className="roster-card" key={schoolClass.id}>
+                <input type="hidden" name="teacherId" value={profile.id} />
                 <input type="hidden" name="classId" value={schoolClass.id} />
                 <h3>{schoolClass.name}</h3>
                 <p>{roster.length} طالبًا محفوظًا</p>
