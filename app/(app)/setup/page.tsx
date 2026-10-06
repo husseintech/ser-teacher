@@ -9,19 +9,20 @@ import { requireTeacher } from "@/lib/auth";
 
 export const metadata = { title: "بياناتي وصفوفي" };
 
-export default async function SetupPage() {
+export default async function SetupPage({ searchParams }: { searchParams: Promise<{ teacherId?: string }> }) {
   const user = await requireTeacher();
+  const query = await searchParams;
   const db = getDb();
-  const [[profile], subjectRows, classRows, assignmentRows, studentRows] = await Promise.all([
-    db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, user.id)).limit(1),
-    db.select().from(subjects).where(eq(subjects.userId, user.id)).orderBy(asc(subjects.name)),
-    db.select().from(classes).where(eq(classes.userId, user.id)).orderBy(asc(classes.createdAt)),
-    db
-      .select({ id: teachingAssignments.id, classId: teachingAssignments.classId, subjectId: teachingAssignments.subjectId, subjectName: subjects.name })
-      .from(teachingAssignments)
-      .innerJoin(subjects, eq(subjects.id, teachingAssignments.subjectId))
-      .where(eq(teachingAssignments.userId, user.id)),
-    db.select().from(students).where(and(eq(students.userId, user.id), eq(students.active, true))).orderBy(asc(students.position)),
+  const teacherRows = await db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, user.id)).orderBy(asc(teacherProfiles.createdAt));
+  const profile = teacherRows.find((item) => item.id === query.teacherId) ?? teacherRows[0];
+  if (!profile) return <div className="empty-state">لا يوجد معلم في هذا الحساب.</div>;
+  const [subjectRows, classRows, assignmentRows, studentRows] = await Promise.all([
+    db.select().from(subjects).where(and(eq(subjects.userId, user.id), eq(subjects.teacherProfileId, profile.id))).orderBy(asc(subjects.name)),
+    db.select().from(classes).where(and(eq(classes.userId, user.id), eq(classes.teacherProfileId, profile.id))).orderBy(asc(classes.createdAt)),
+    db.select({ id: teachingAssignments.id, classId: teachingAssignments.classId, subjectId: teachingAssignments.subjectId, subjectName: subjects.name })
+      .from(teachingAssignments).innerJoin(subjects, eq(subjects.id, teachingAssignments.subjectId))
+      .where(and(eq(teachingAssignments.userId, user.id), eq(teachingAssignments.teacherProfileId, profile.id))),
+    db.select().from(students).where(and(eq(students.userId, user.id), eq(students.teacherProfileId, profile.id), eq(students.active, true))).orderBy(asc(students.position)),
   ]);
 
   const assignmentsByClass = new Map<string, typeof assignmentRows>();
@@ -30,8 +31,10 @@ export default async function SetupPage() {
   return (
     <>
       <header className="page-header">
-        <div><h1>بياناتي وصفوفي</h1><p>هذه البيانات تظهر على أغلفة الدفاتر، وتُحفظ في حسابك.</p></div>
+        <div><h1>بياناتي وصفوفي</h1><p>يمكن للحساب الواحد إدارة عدة معلمين، ولكل معلم دفاتره وطلابه بشكل مستقل.</p></div>
       </header>
+
+      <section className="card" style={{ marginBottom: 18 }}><div className="card-title"><h2>اختيار المعلم</h2></div><form method="get" className="inline-form"><div className="field"><label htmlFor="teacherId">المعلم</label><select className="select" id="teacherId" name="teacherId" defaultValue={profile.id}>{teacherRows.map((teacher) => <option value={teacher.id} key={teacher.id}>{teacher.name}</option>)}</select></div><button className="btn btn-secondary" type="submit">فتح بيانات المعلم</button></form><div className="divider" /><form action={addTeacherAction} className="inline-form"><input type="hidden" name="teacherId" value={profile.id} /><div className="field"><label htmlFor="newTeacherName">إضافة معلم جديد</label><input className="input" id="newTeacherName" name="name" placeholder="اسم المعلم الرباعي" required /></div><button className="btn btn-primary" type="submit">إضافة المعلم</button></form></section>
 
       <div className="stack">
         <section className="card">
