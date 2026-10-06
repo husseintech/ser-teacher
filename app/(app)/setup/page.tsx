@@ -1,6 +1,6 @@
 import { and, asc, eq } from "drizzle-orm";
 import { BookPlus, GraduationCap, Link2, Save, Users } from "lucide-react";
-import { addClassAction, addSubjectAction, assignSubjectAction, deleteClassAction, deleteSubjectAction, saveProfileAction, syncRosterAction, updateClassStageAction, updateSubjectAction } from "@/app/actions";
+import { addClassAction, addSubjectAction, addTeacherAction, assignSubjectAction, deleteClassAction, deleteSubjectAction, saveProfileAction, syncRosterAction, updateClassStageAction, updateSubjectAction } from "@/app/actions";
 import { DeleteClassButton } from "@/components/app/delete-class-button";
 import { DeleteSubjectButton } from "@/components/app/delete-subject-button";
 import { getDb } from "@/db";
