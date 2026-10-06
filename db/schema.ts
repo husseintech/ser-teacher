@@ -88,9 +88,11 @@ export const sessions = pgTable(
 );
 
 export const teacherProfiles = pgTable("teacher_profiles", {
+  id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
-    .primaryKey()
+    .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
   schoolName: text("school_name").notNull().default(""),
   schoolNationalId: text("school_national_id").notNull().default(""),
   directorate: text("directorate").notNull().default("يطا"),
@@ -105,10 +107,13 @@ export const subjects = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    teacherProfileId: uuid("teacher_profile_id")
+      .notNull()
+      .references(() => teacherProfiles.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     ...timestamps,
   },
-  (table) => [uniqueIndex("subjects_user_name_unique").on(table.userId, table.name)],
+  (table) => [uniqueIndex("subjects_teacher_name_unique").on(table.teacherProfileId, table.name)],
 );
 
 export const classes = pgTable(
@@ -118,11 +123,14 @@ export const classes = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    teacherProfileId: uuid("teacher_profile_id")
+      .notNull()
+      .references(() => teacherProfiles.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     stage: text("stage").notNull().default("basic"),
     ...timestamps,
   },
-  (table) => [uniqueIndex("classes_user_name_unique").on(table.userId, table.name)],
+  (table) => [uniqueIndex("classes_teacher_name_unique").on(table.teacherProfileId, table.name)],
 );
 
 export const teachingAssignments = pgTable(
@@ -132,6 +140,9 @@ export const teachingAssignments = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    teacherProfileId: uuid("teacher_profile_id")
+      .notNull()
+      .references(() => teacherProfiles.id, { onDelete: "cascade" }),
     classId: uuid("class_id")
       .notNull()
       .references(() => classes.id, { onDelete: "cascade" }),
@@ -143,8 +154,8 @@ export const teachingAssignments = pgTable(
   (table) => [
     index("assignments_class_id_idx").on(table.classId),
     index("assignments_subject_id_idx").on(table.subjectId),
-    uniqueIndex("assignments_user_class_subject_unique").on(
-      table.userId,
+    uniqueIndex("assignments_teacher_class_subject_unique").on(
+      table.teacherProfileId,
       table.classId,
       table.subjectId,
     ),
@@ -158,6 +169,9 @@ export const students = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    teacherProfileId: uuid("teacher_profile_id")
+      .notNull()
+      .references(() => teacherProfiles.id, { onDelete: "cascade" }),
     classId: uuid("class_id")
       .notNull()
       .references(() => classes.id, { onDelete: "cascade" }),
@@ -180,6 +194,9 @@ export const gradebooks = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    teacherProfileId: uuid("teacher_profile_id")
+      .notNull()
+      .references(() => teacherProfiles.id, { onDelete: "cascade" }),
     classId: uuid("class_id")
       .notNull()
       .references(() => classes.id, { onDelete: "cascade" }),
@@ -198,8 +215,8 @@ export const gradebooks = pgTable(
   (table) => [
     index("gradebooks_class_id_idx").on(table.classId),
     index("gradebooks_subject_id_idx").on(table.subjectId),
-    uniqueIndex("gradebooks_owner_class_subject_year_unique").on(
-      table.userId,
+    uniqueIndex("gradebooks_teacher_class_subject_year_unique").on(
+      table.teacherProfileId,
       table.classId,
       table.subjectId,
       table.academicYear,
@@ -238,6 +255,9 @@ export const attendanceBooks = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    teacherProfileId: uuid("teacher_profile_id")
+      .notNull()
+      .references(() => teacherProfiles.id, { onDelete: "cascade" }),
     classId: uuid("class_id")
       .notNull()
       .references(() => classes.id, { onDelete: "cascade" }),
@@ -248,8 +268,8 @@ export const attendanceBooks = pgTable(
   },
   (table) => [
     index("attendance_books_class_id_idx").on(table.classId),
-    uniqueIndex("attendance_books_owner_class_year_unique").on(
-      table.userId,
+    uniqueIndex("attendance_books_teacher_class_year_unique").on(
+      table.teacherProfileId,
       table.classId,
       table.academicYear,
     ),
