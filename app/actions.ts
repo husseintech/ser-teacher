@@ -435,7 +435,7 @@ export async function syncRosterAction(formData: FormData) {
   const [ownedClass] = await db
     .select({ id: classes.id })
     .from(classes)
-    .where(and(eq(classes.id, classId), eq(classes.userId, user.id)))
+    .where(and(eq(classes.id, classId), eq(classes.userId, user.id), eq(classes.teacherProfileId, teacherId)))
     .limit(1);
   if (!ownedClass) throw new Error("الصف غير متاح.");
 
