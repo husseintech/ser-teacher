@@ -48,7 +48,10 @@ export async function GET(request: Request) {
   const rowsCount = Number.isInteger(parsedRows) && parsedRows >= 35 && parsedRows <= 50 ? parsedRows : 40;
 
   const db = getDb();
-  const [profile] = await db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, user.id)).limit(1);
+  const teacherId = new URL(request.url).searchParams.get("teacherId");
+  const teacherRows = await db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, user.id)).orderBy(asc(teacherProfiles.createdAt));
+  const profile = teacherRows.find((item) => item.id === teacherId) ?? teacherRows[0];
+  if (!profile) return NextResponse.json({ message: "لا يوجد معلم." }, { status: 404 });
   const schoolName = profile?.schoolName || "اسم المدرسة";
   const academicYear = profile?.academicYear || "";
 
@@ -62,7 +65,7 @@ export async function GET(request: Request) {
     .from(teachingAssignments)
     .innerJoin(classes, eq(classes.id, teachingAssignments.classId))
     .innerJoin(subjects, eq(subjects.id, teachingAssignments.subjectId))
-    .where(and(eq(teachingAssignments.userId, user.id), eq(classes.stage, stage)))
+    .where(and(eq(teachingAssignments.userId, user.id), eq(teachingAssignments.teacherProfileId, profile.id), eq(classes.stage, stage), eq(classes.teacherProfileId, profile.id)))
     .orderBy(asc(classes.name), asc(subjects.name));
 
   if (!assignments.length) {
@@ -80,7 +83,7 @@ export async function GET(request: Request) {
       finalExamWeight: gradebooks.finalExamWeight,
     })
     .from(gradebooks)
-    .where(and(eq(gradebooks.userId, user.id), eq(gradebooks.academicYear, academicYear)));
+    .where(and(eq(gradebooks.userId, user.id), eq(gradebooks.teacherProfileId, profile.id), eq(gradebooks.academicYear, academicYear)));
   const weightsByAssignment = new Map(
     gradebookRows.map((row) => [
       `${row.classId}:${row.subjectId}`,
@@ -98,7 +101,7 @@ export async function GET(request: Request) {
   const studentRows = await db
     .select({ id: students.id, name: students.name, classId: students.classId })
     .from(students)
-    .where(and(eq(students.userId, user.id), eq(students.active, true)))
+    .where(and(eq(students.userId, user.id), eq(students.teacherProfileId, profile.id), eq(students.active, true)))
     .orderBy(asc(students.position));
 
   const workbook = new ExcelJS.Workbook();
