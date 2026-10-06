@@ -36,9 +36,9 @@ export default async function SetupPage() {
       <div className="stack">
         <section className="card">
           <div className="card-title"><h2>بيانات المعلم والمدرسة</h2></div>
-          <form action={saveProfileAction} className="form-grid">
+          <form action={saveProfileAction} className="form-grid"><input type="hidden" name="teacherId" value={profile.id} />
             <div className="form-row">
-              <div className="field"><label>اسم المعلم</label><input className="input" value={user.fullName} readOnly /></div>
+              <div className="field"><label>اسم المعلم</label><input className="input" value={profile.name} readOnly /></div>
               <div className="field"><label>البريد الإلكتروني</label><input className="input" dir="ltr" value={user.email} readOnly /></div>
             </div>
             <div className="form-row">
@@ -56,7 +56,7 @@ export default async function SetupPage() {
         <section className="content-grid" style={{ marginTop: 0 }}>
           <div className="card">
             <div className="card-title"><h2>المواد التي أدرسها</h2><BookPlus color="var(--green)" /></div>
-            <form action={addSubjectAction} className="inline-form">
+            <form action={addSubjectAction} className="inline-form"><input type="hidden" name="teacherId" value={profile.id} />
               <div className="field"><label htmlFor="subjectName">اسم المادة</label><input className="input" id="subjectName" name="name" placeholder="اللغة العربية" required /></div>
               <button className="btn btn-primary" type="submit">إضافة المادة</button>
             </form>
@@ -64,18 +64,18 @@ export default async function SetupPage() {
             <div className="subject-list">{subjectRows.length ? subjectRows.map((subject) => (
               <div className="subject-item" key={subject.id}>
                 <form action={updateSubjectAction} className="inline-form subject-edit-form">
-                  <input type="hidden" name="subjectId" value={subject.id} />
+                  <input type="hidden" name="teacherId" value={profile.id} /><input type="hidden" name="subjectId" value={subject.id} />
                   <div className="field"><label htmlFor={`subject-${subject.id}`}>اسم المادة</label><input className="input" id={`subject-${subject.id}`} name="name" defaultValue={subject.name} required /></div>
                   <button className="btn btn-secondary btn-small" type="submit"><Save size={15} />حفظ الاسم</button>
                 </form>
-                <DeleteSubjectButton action={deleteSubjectAction} subjectId={subject.id} subjectName={subject.name} />
+                <DeleteSubjectButton action={deleteSubjectAction} subjectId={subject.id} subjectName={subject.name} teacherId={profile.id} />
               </div>
             )) : <span style={{ color: "var(--muted)" }}>لم تضف مواد بعد.</span>}</div>
           </div>
 
           <div className="card">
             <div className="card-title"><h2>الصفوف التي أدرسها</h2><GraduationCap color="var(--green)" /></div>
-            <form action={addClassAction} className="inline-form">
+            <form action={addClassAction} className="inline-form"><input type="hidden" name="teacherId" value={profile.id} />
               <div className="field"><label htmlFor="className">اسم الصف والشعبة</label><input className="input" id="className" name="name" placeholder="الصف الرابع أ" required /></div>
               <div className="field"><label htmlFor="stage">نوع دفتر العلامات</label><select className="select" id="stage" name="stage" required><option value="" disabled>اختر نوع المرحلة</option><option value="basic">المرحلة الأساسية (1–4)</option><option value="upper">المرحلة من الخامس فما فوق</option></select></div>
               <button className="btn btn-primary" type="submit">حفظ الصف</button>
@@ -87,14 +87,14 @@ export default async function SetupPage() {
                 <strong>{schoolClass.name}</strong>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <form action={updateClassStageAction} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <input type="hidden" name="classId" value={schoolClass.id} />
+                    <input type="hidden" name="teacherId" value={profile.id" /><input type="hidden" name="classId" value={schoolClass.id} />
                     <select className="select" name="stage" defaultValue={schoolClass.stage} aria-label={`نوع دفتر العلامات لصف ${schoolClass.name}`}>
                       <option value="basic">المرحلة الأساسية (1–4)</option>
                       <option value="upper">المرحلة من الخامس فما فوق</option>
                     </select>
                     <button className="btn btn-secondary btn-small" type="submit">حفظ</button>
                   </form>
-                  <DeleteClassButton action={deleteClassAction} classId={schoolClass.id} className={schoolClass.name} />
+                  <DeleteClassButton action={deleteClassAction} classId={schoolClass.id} className={schoolClass.name} teacherId={profile.id} />
                 </div>
               </div>
             )) : <span style={{ color: "var(--muted)" }}>لم تضف صفوفًا بعد.</span>}</div>
@@ -108,7 +108,7 @@ export default async function SetupPage() {
               <h3>{schoolClass.name}</h3>
               <p>{(assignmentsByClass.get(schoolClass.id) ?? []).map((row) => row.subjectName).join("، ") || "لا توجد مواد مرتبطة"}</p>
               <form action={assignSubjectAction} className="inline-form">
-                <input type="hidden" name="classId" value={schoolClass.id} />
+                <input type="hidden" name="teacherId" value={profile.id} /><input type="hidden" name="classId" value={schoolClass.id} />
                 <div className="field"><select className="select" name="subjectId" aria-label={`مادة ${schoolClass.name}`} required><option value="">اختر المادة</option>{subjectRows.map((subject) => <option value={subject.id} key={subject.id}>{subject.name}</option>)}</select></div>
                 <button className="btn btn-secondary btn-small" type="submit">ربط المادة</button>
               </form>
