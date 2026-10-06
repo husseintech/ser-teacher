@@ -87,7 +87,7 @@ export default async function SetupPage() {
                 <strong>{schoolClass.name}</strong>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <form action={updateClassStageAction} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <input type="hidden" name="teacherId" value={profile.id" /><input type="hidden" name="classId" value={schoolClass.id} />
+                    <input type="hidden" name="teacherId" value={profile.id} /><input type="hidden" name="classId" value={schoolClass.id} />
                     <select className="select" name="stage" defaultValue={schoolClass.stage} aria-label={`نوع دفتر العلامات لصف ${schoolClass.name}`}>
                       <option value="basic">المرحلة الأساسية (1–4)</option>
                       <option value="upper">المرحلة من الخامس فما فوق</option>
