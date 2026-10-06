@@ -38,17 +38,7 @@ export default async function PrintPage({
   const teacherRows = await db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, user.id)).orderBy(asc(teacherProfiles.createdAt));
   const profile = teacherRows.find((item) => item.id === query.teacherId) ?? teacherRows[0];
   if (!profile) notFound();
-  const safeProfile = profile ?? {
-    userId: user.id,
-    id: "",
-    name: user.fullName,
-    schoolName: "",
-    schoolNationalId: "",
-    directorate: "يطا",
-    academicYear: "2026/2027",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+  const safeProfile = profile;
 
   let content: React.ReactNode;
 
@@ -142,11 +132,11 @@ export default async function PrintPage({
     const studentRows = await db
       .select({ id: students.id, name: students.name, status: students.status })
       .from(students)
-      .where(and(eq(students.userId, user.id), eq(students.classId, schoolClass.id), eq(students.active, true)))
+      .where(and(eq(students.userId, user.id), eq(students.teacherProfileId, safeProfile.id), eq(students.classId, schoolClass.id), eq(students.active, true)))
       .orderBy(asc(students.position));
 
     if (section === "cover") {
-      content = <OfficialCover title="دفتر الحضور والغياب" teacherName={user.fullName} profile={safeProfile} classNames={[schoolClass.name]} />;
+      content = <OfficialCover title="دفتر الحضور والغياب" teacherName={safeProfile.name} profile={safeProfile} classNames={[schoolClass.name]} />;
     } else if (section === "student-status") {
       content = <StudentStatusPage profile={safeProfile} className={schoolClass.name} students={studentRows} rowsCount={rowsCount} />;
     } else if (section === "summaries") {
@@ -186,7 +176,7 @@ export default async function PrintPage({
     <main className="print-root">
       {isGradebookRecords ? (
         <div className="screen-only print-export-bar">
-          <GradebookExportButton stage={query.stage === "upper" ? "upper" : "basic"} rowsCount={query.rows ? Number(query.rows) || 40 : 40} />
+          <GradebookExportButton stage={query.stage === "upper" ? "upper" : "basic"} rowsCount={query.rows ? Number(query.rows) || 40 : 40} teacherId={safeProfile.id} />
         </div>
       ) : null}
       <PrintToolbar />{content}
