@@ -56,6 +56,7 @@ export function GradeWeightEditor({
       {open ? (
         <form action={action}>
           <input type="hidden" name="classId" value={classId} />
+          <input type="hidden" name="teacherId" value={teacherId} />
           <input type="hidden" name="subjectId" value={subjectId} />
           <input type="hidden" name="academicYear" value={academicYear} />
           <div className="grade-weight-editor-fields">
