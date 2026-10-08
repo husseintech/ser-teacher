@@ -276,10 +276,20 @@ export async function updateGradebookWeightsAction(_: ActionState, formData: For
   const user = await requireTeacher();
 
   try {
-    const classId = z.string().uuid().parse(formData.get("classId"));
-    const teacherId = z.string().uuid().parse(formData.get("teacherId"));
-    const subjectId = z.string().uuid().parse(formData.get("subjectId"));
-    const academicYear = z.string().trim().min(9).parse(formData.get("academicYear"));
+    // اقرأ القيم النصية أولًا حتى لا يظهر خطأ Zod العام "expected string, received null"
+    // إذا كان أحد الحقول المخفية غير موجود في الطلب.
+    const requiredFormValue = (name: string) => {
+      const value = formData.get(name);
+      if (typeof value !== "string" || !value.trim()) {
+        throw new Error(`الحقل المطلوب مفقود: ${name}`);
+      }
+      return value.trim();
+    };
+
+    const classId = z.string().uuid().parse(requiredFormValue("classId"));
+    const teacherId = z.string().uuid().parse(requiredFormValue("teacherId"));
+    const subjectId = z.string().uuid().parse(requiredFormValue("subjectId"));
+    const academicYear = z.string().min(9).parse(requiredFormValue("academicYear"));
     // بعض المواد مجموع علاماتها 150 أو 200، لذا تُقبل أي قيمة دون اشتراط المجموع.
     const weightSchema = z.coerce.number().int().min(0).max(1000);
     const shortExam1Weight = weightSchema.parse(formData.get("shortExam1Weight"));
