@@ -17,6 +17,7 @@ type Weights = {
 export function GradeWeightEditor({
   classId,
   subjectId,
+  teacherId,
   className,
   subjectName,
   academicYear,
