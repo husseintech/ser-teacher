@@ -24,6 +24,7 @@ export function GradeWeightEditor({
 }: {
   classId: string;
   subjectId: string;
+  teacherId: string;
   className: string;
   subjectName: string;
   academicYear: string;
