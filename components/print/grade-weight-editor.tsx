@@ -59,6 +59,10 @@ export function GradeWeightEditor({
       {open ? (
         <form action={action}>
           <input type="hidden" name="assignmentId" value={assignmentId} />
+          <input type="hidden" name="classId" value={classId} />
+          <input type="hidden" name="teacherId" value={teacherId} />
+          <input type="hidden" name="subjectId" value={subjectId} />
+          <input type="hidden" name="academicYear" value={academicYear} />
           <div className="grade-weight-editor-fields">
             <label className="grade-weight-editor-field">اختبار قصير 1<input name="shortExam1Weight" type="number" min="0" max="1000" defaultValue={weights.shortExam1} required /></label>
             <label className="grade-weight-editor-field">اختبار نصف الفصل<input name="midtermExamWeight" type="number" min="0" max="1000" defaultValue={weights.midtermExam} required /></label>
