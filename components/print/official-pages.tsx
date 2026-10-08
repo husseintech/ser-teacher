@@ -72,6 +72,7 @@ export function GradebookPages({ profile, teacherName, className, subjectName, s
       <GradeWeightEditor
         classId={classId}
         subjectId={subjectId}
+        teacherId={profile.id}
         className={className}
         subjectName={subjectName}
         academicYear={academicYear}
