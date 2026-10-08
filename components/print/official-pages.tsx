@@ -56,6 +56,7 @@ export function GradebookPages({ profile, teacherName, className, subjectName, s
   stage: "basic" | "upper";
   classId: string;
   subjectId: string;
+  teacherId: string;
   academicYear: string;
   weights?: { shortExam1: number; midtermExam: number; shortExam2: number; qualitative: number; finalExam: number };
 }) {
