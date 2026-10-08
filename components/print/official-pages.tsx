@@ -46,7 +46,7 @@ function RegisterHeader({ profile, teacherName }: { profile: Profile; teacherNam
   );
 }
 
-export function GradebookPages({ profile, teacherName, className, subjectName, students, rowsCount, stage, classId, subjectId, academicYear, weights }: {
+export function GradebookPages({ profile, teacherName, className, subjectName, students, rowsCount, stage, classId, subjectId, teacherId, academicYear, weights }: {
   profile: Profile;
   teacherName: string;
   className: string;
