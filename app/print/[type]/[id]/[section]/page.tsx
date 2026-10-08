@@ -108,6 +108,7 @@ export default async function PrintPage({
           students={relevantStudents.filter((student) => student.classId === assignment.classId)}
           rowsCount={rowsCount}
           stage={stage}
+          assignmentId={assignment.id}
           classId={assignment.classId}
           subjectId={assignment.subjectId}
           academicYear={safeProfile.academicYear}
