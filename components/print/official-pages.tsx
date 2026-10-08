@@ -46,7 +46,7 @@ function RegisterHeader({ profile, teacherName }: { profile: Profile; teacherNam
   );
 }
 
-export function GradebookPages({ profile, teacherName, className, subjectName, students, rowsCount, stage, classId, subjectId, teacherId, academicYear, weights }: {
+export function GradebookPages({ profile, teacherName, className, subjectName, students, rowsCount, stage, assignmentId, classId, subjectId, teacherId, academicYear, weights }: {
   profile: Profile;
   teacherName: string;
   className: string;
@@ -54,6 +54,7 @@ export function GradebookPages({ profile, teacherName, className, subjectName, s
   students: PrintStudent[];
   rowsCount: number;
   stage: "basic" | "upper";
+  assignmentId: string;
   classId: string;
   subjectId: string;
   teacherId: string;
@@ -70,6 +71,7 @@ export function GradebookPages({ profile, teacherName, className, subjectName, s
   return <>
     {stage === "upper" ? (
       <GradeWeightEditor
+        assignmentId={assignmentId}
         classId={classId}
         subjectId={subjectId}
         teacherId={teacherId}
