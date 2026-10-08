@@ -276,7 +276,21 @@ export async function updateGradebookWeightsAction(_: ActionState, formData: For
   const user = await requireTeacher();
 
   try {
-    const assignmentId = z.string().uuid().parse(formData.get("assignmentId"));
+    const rawAssignmentId = formData.get("assignmentId");
+    const rawClassId = formData.get("classId");
+    const rawSubjectId = formData.get("subjectId");
+    const rawTeacherId = formData.get("teacherId");
+    const rawAcademicYear = formData.get("academicYear");
+
+    const assignmentId = typeof rawAssignmentId === "string" && rawAssignmentId.trim()
+      ? z.string().uuid().parse(rawAssignmentId)
+      : null;
+
+    const legacyClassId = typeof rawClassId === "string" && rawClassId.trim() ? z.string().uuid().parse(rawClassId) : null;
+    const legacySubjectId = typeof rawSubjectId === "string" && rawSubjectId.trim() ? z.string().uuid().parse(rawSubjectId) : null;
+    const legacyTeacherId = typeof rawTeacherId === "string" && rawTeacherId.trim() ? z.string().uuid().parse(rawTeacherId) : null;
+    const legacyAcademicYear = typeof rawAcademicYear === "string" && rawAcademicYear.trim() ? rawAcademicYear.trim() : null;
+
     const weightSchema = z.coerce.number().int().min(0).max(1000);
     const shortExam1Weight = weightSchema.parse(formData.get("shortExam1Weight"));
     const midtermExamWeight = weightSchema.parse(formData.get("midtermExamWeight"));
@@ -289,6 +303,16 @@ export async function updateGradebookWeightsAction(_: ActionState, formData: For
     // لا نعتمد على teacherId/classId/subjectId/academicYear المرسلة من المتصفح.
     // نحددها كلها من الربط نفسه، وهذا يمنع فقدان أحد الحقول المخفية ويضمن حفظ
     // الأوزان في دفتر الصف والمبحث الصحيحين.
+    const assignmentConditions = [
+      eq(teachingAssignments.userId, user.id),
+      eq(classes.userId, user.id),
+      eq(teacherProfiles.userId, user.id),
+      ...(assignmentId ? [eq(teachingAssignments.id, assignmentId)] : []),
+      ...(legacyClassId ? [eq(teachingAssignments.classId, legacyClassId)] : []),
+      ...(legacySubjectId ? [eq(teachingAssignments.subjectId, legacySubjectId)] : []),
+      ...(legacyTeacherId ? [eq(teachingAssignments.teacherProfileId, legacyTeacherId)] : []),
+    ];
+
     const [assignment] = await db
       .select({
         classId: teachingAssignments.classId,
@@ -300,12 +324,7 @@ export async function updateGradebookWeightsAction(_: ActionState, formData: For
       .from(teachingAssignments)
       .innerJoin(classes, eq(classes.id, teachingAssignments.classId))
       .innerJoin(teacherProfiles, eq(teacherProfiles.id, teachingAssignments.teacherProfileId))
-      .where(and(
-        eq(teachingAssignments.id, assignmentId),
-        eq(teachingAssignments.userId, user.id),
-        eq(classes.userId, user.id),
-        eq(teacherProfiles.userId, user.id),
-      ))
+      .where(and(...assignmentConditions))
       .limit(1);
 
     if (!assignment) return { ok: false, message: "هذا الصف والمبحث غير متاحين للحساب الحالي." };
@@ -339,7 +358,7 @@ export async function updateGradebookWeightsAction(_: ActionState, formData: For
       });
 
     await writeAuditLog(user, "gradebook_weights_updated", "تحديث أوزان دفتر العلامات", {
-      assignmentId,
+      assignmentId: assignmentId ?? "legacy-form",
       classId: assignment.classId,
       subjectId: assignment.subjectId,
       academicYear: assignment.academicYear,
