@@ -15,6 +15,7 @@ type Weights = {
 };
 
 export function GradeWeightEditor({
+  assignmentId,
   classId,
   subjectId,
   teacherId,
@@ -23,6 +24,7 @@ export function GradeWeightEditor({
   academicYear,
   weights,
 }: {
+  assignmentId: string;
   classId: string;
   subjectId: string;
   teacherId: string;
@@ -56,10 +58,7 @@ export function GradeWeightEditor({
       </div>
       {open ? (
         <form action={action}>
-          <input type="hidden" name="classId" value={classId} />
-          <input type="hidden" name="teacherId" value={teacherId} />
-          <input type="hidden" name="subjectId" value={subjectId} />
-          <input type="hidden" name="academicYear" value={academicYear} />
+          <input type="hidden" name="assignmentId" value={assignmentId} />
           <div className="grade-weight-editor-fields">
             <label className="grade-weight-editor-field">اختبار قصير 1<input name="shortExam1Weight" type="number" min="0" max="1000" defaultValue={weights.shortExam1} required /></label>
             <label className="grade-weight-editor-field">اختبار نصف الفصل<input name="midtermExamWeight" type="number" min="0" max="1000" defaultValue={weights.midtermExam} required /></label>
