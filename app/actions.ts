@@ -276,21 +276,7 @@ export async function updateGradebookWeightsAction(_: ActionState, formData: For
   const user = await requireTeacher();
 
   try {
-    // اقرأ القيم النصية أولًا حتى لا يظهر خطأ Zod العام "expected string, received null"
-    // إذا كان أحد الحقول المخفية غير موجود في الطلب.
-    const requiredFormValue = (name: string) => {
-      const value = formData.get(name);
-      if (typeof value !== "string" || !value.trim()) {
-        throw new Error(`الحقل المطلوب مفقود: ${name}`);
-      }
-      return value.trim();
-    };
-
-    const classId = z.string().uuid().parse(requiredFormValue("classId"));
-    const teacherId = z.string().uuid().parse(requiredFormValue("teacherId"));
-    const subjectId = z.string().uuid().parse(requiredFormValue("subjectId"));
-    const academicYear = z.string().min(9).parse(requiredFormValue("academicYear"));
-    // بعض المواد مجموع علاماتها 150 أو 200، لذا تُقبل أي قيمة دون اشتراط المجموع.
+    const assignmentId = z.string().uuid().parse(formData.get("assignmentId"));
     const weightSchema = z.coerce.number().int().min(0).max(1000);
     const shortExam1Weight = weightSchema.parse(formData.get("shortExam1Weight"));
     const midtermExamWeight = weightSchema.parse(formData.get("midtermExamWeight"));
@@ -299,29 +285,39 @@ export async function updateGradebookWeightsAction(_: ActionState, formData: For
     const finalExamWeight = weightSchema.parse(formData.get("finalExamWeight"));
 
     const db = getDb();
+
+    // لا نعتمد على teacherId/classId/subjectId/academicYear المرسلة من المتصفح.
+    // نحددها كلها من الربط نفسه، وهذا يمنع فقدان أحد الحقول المخفية ويضمن حفظ
+    // الأوزان في دفتر الصف والمبحث الصحيحين.
     const [assignment] = await db
-      .select({ classId: teachingAssignments.classId, subjectId: teachingAssignments.subjectId, stage: classes.stage })
+      .select({
+        classId: teachingAssignments.classId,
+        subjectId: teachingAssignments.subjectId,
+        teacherProfileId: teachingAssignments.teacherProfileId,
+        academicYear: teacherProfiles.academicYear,
+        stage: classes.stage,
+      })
       .from(teachingAssignments)
       .innerJoin(classes, eq(classes.id, teachingAssignments.classId))
+      .innerJoin(teacherProfiles, eq(teacherProfiles.id, teachingAssignments.teacherProfileId))
       .where(and(
+        eq(teachingAssignments.id, assignmentId),
         eq(teachingAssignments.userId, user.id),
-        eq(teachingAssignments.teacherProfileId, teacherId),
-        eq(teachingAssignments.classId, classId),
-        eq(teachingAssignments.subjectId, subjectId),
         eq(classes.userId, user.id),
-        eq(classes.teacherProfileId, teacherId),
+        eq(teacherProfiles.userId, user.id),
       ))
       .limit(1);
-    if (!assignment) return { ok: false, message: "هذه المادة غير مرتبطة بالصف." };
+
+    if (!assignment) return { ok: false, message: "هذا الصف والمبحث غير متاحين للحساب الحالي." };
 
     await db
       .insert(gradebooks)
       .values({
         userId: user.id,
-        teacherProfileId: teacherId,
-        classId,
-        subjectId,
-        academicYear,
+        teacherProfileId: assignment.teacherProfileId,
+        classId: assignment.classId,
+        subjectId: assignment.subjectId,
+        academicYear: assignment.academicYear,
         stage: assignment.stage,
         shortExam1Weight,
         midtermExamWeight,
@@ -343,9 +339,10 @@ export async function updateGradebookWeightsAction(_: ActionState, formData: For
       });
 
     await writeAuditLog(user, "gradebook_weights_updated", "تحديث أوزان دفتر العلامات", {
-      classId,
-      subjectId,
-      academicYear,
+      assignmentId,
+      classId: assignment.classId,
+      subjectId: assignment.subjectId,
+      academicYear: assignment.academicYear,
       shortExam1Weight,
       midtermExamWeight,
       shortExam2Weight,
@@ -354,6 +351,7 @@ export async function updateGradebookWeightsAction(_: ActionState, formData: For
     });
     revalidatePath("/gradebooks");
     revalidatePath("/setup");
+    revalidatePath("/print/gradebook");
     return { ok: true, message: "تم حفظ الأوزان." };
   } catch (error) {
     if (error instanceof z.ZodError) return { ok: false, message: error.issues[0]?.message ?? "تحقق من الحقول." };
