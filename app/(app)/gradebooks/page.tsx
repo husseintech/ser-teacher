@@ -80,6 +80,9 @@ export default async function GradebooksPage({ searchParams }: { searchParams: P
               <button className="btn btn-dark" formAction={`/print/gradebook/all/records?teacherId=${profile.id}`} type="submit">
                 <Printer size={18} />طباعة صفحات العلامات
               </button>
+              <button className="btn btn-primary" formAction="/print/gradebook/all-teachers/book" type="submit">
+                <Printer size={18} />طباعة جميع دفاتر المعلمين
+              </button>
             </div>
           </form>
         ) : (
