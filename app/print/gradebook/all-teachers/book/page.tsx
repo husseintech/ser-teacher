@@ -51,7 +51,7 @@ export default async function PrintAllTeacherBooks({ searchParams }: { searchPar
     const weights = new Map(weightRows.map((row) => [`${row.classId}:${row.subjectId}`, {
       shortExam1: row.shortExam1Weight, midtermExam: row.midtermExamWeight,
       shortExam2: row.shortExam2Weight, qualitative: row.qualitativeWeight, finalExam: row.finalExamWeight,
-    }]));
+    }] as const));
     return { profile, assignments, studentRows, weights };
   }));
 
