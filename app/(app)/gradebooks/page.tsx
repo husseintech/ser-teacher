@@ -49,7 +49,7 @@ export default async function GradebooksPage({ searchParams }: { searchParams: P
         </div>
 
         {assignments.length ? (
-          <form className="form-grid" method="get" target="_blank">
+          <form className="form-grid" method="get" target="_blank"><input type="hidden" name="teacherId" value={profile.id} />
             <div className="form-row">
               <div className="field">
                 <label htmlFor="grade-stage">نوع دفتر العلامات</label>
@@ -74,10 +74,10 @@ export default async function GradebooksPage({ searchParams }: { searchParams: P
             </div>
 
             <div className="print-actions">
-              <button className="btn btn-secondary" formAction={`/print/gradebook/all/cover?teacherId=${profile.id}`} type="submit">
+              <button className="btn btn-secondary" formAction="/print/gradebook/all/cover" type="submit">
                 <Printer size={18} />طباعة الغلاف
               </button>
-              <button className="btn btn-dark" formAction={`/print/gradebook/all/records?teacherId=${profile.id}`} type="submit">
+              <button className="btn btn-dark" formAction="/print/gradebook/all/records" type="submit">
                 <Printer size={18} />طباعة صفحات العلامات
               </button>
               <button className="btn btn-primary" formAction="/print/gradebook/all-teachers/book" type="submit">
