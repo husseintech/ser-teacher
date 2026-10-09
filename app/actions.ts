@@ -383,7 +383,14 @@ export async function addClassAction(formData: FormData) {
   const name = z.string().trim().min(2).parse(formData.get("name"));
   const stage = z.enum(["basic", "upper"]).parse(formData.get("stage"));
   const teacherId = z.string().uuid().parse(formData.get("teacherId"));
-  await getDb()
+  const db = getDb();
+  const [ownedTeacher] = await db
+    .select({ id: teacherProfiles.id })
+    .from(teacherProfiles)
+    .where(and(eq(teacherProfiles.id, teacherId), eq(teacherProfiles.userId, user.id)))
+    .limit(1);
+  if (!ownedTeacher) throw new Error("المعلم المحدد غير موجود في حسابك. حدّث الصفحة واختر المعلم من القائمة.");
+  await db
     .insert(classes)
     .values({ userId: user.id, teacherProfileId: teacherId, name, stage })
     .onConflictDoUpdate({

@@ -57,7 +57,7 @@ export default async function PrintPage({
       .from(teachingAssignments)
       .innerJoin(classes, eq(classes.id, teachingAssignments.classId))
       .innerJoin(subjects, eq(subjects.id, teachingAssignments.subjectId))
-      .where(and(eq(teachingAssignments.userId, user.id), eq(teachingAssignments.teacherProfileId, safeProfile.id), eq(classes.stage, stage), eq(classes.teacherProfileId, safeProfile.id)))
+      .where(and(eq(teachingAssignments.userId, user.id), eq(teachingAssignments.teacherProfileId, safeProfile.id), eq(classes.stage, stage)))
       .orderBy(asc(classes.name), asc(subjects.name));
 
     if (!assignments.length) notFound();

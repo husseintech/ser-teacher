@@ -80,10 +80,13 @@ export default async function GradebooksPage({ searchParams }: { searchParams: P
               <button className="btn btn-dark" formAction={`/print/gradebook/all/records?teacherId=${profile.id}`} type="submit">
                 <Printer size={18} />طباعة صفحات العلامات
               </button>
+              <button className="btn btn-primary" formAction="/print/gradebook/all-teachers/book" type="submit">
+                <Printer size={18} />طباعة جميع دفاتر المعلمين
+              </button>
             </div>
           </form>
         ) : (
-          <div className="empty-state"><BookOpenCheck size={38} /><div>اربط المواد بالصفوف من صفحة «بياناتي وصفوفي» أولًا.</div></div>
+          <div className="empty-state"><BookOpenCheck size={38} /><div>لا توجد صفوف ومواد مرتبطة بهذا المعلم حتى الآن. يمكنك مع ذلك طباعة دفاتر جميع المعلمين من الزر أدناه.</div><form method="get" action="/print/gradebook/all-teachers/book" target="_blank"><button className="btn btn-primary" type="submit"><Printer size={18} />طباعة جميع دفاتر المعلمين</button></form></div>
         )}
       </section>
 
