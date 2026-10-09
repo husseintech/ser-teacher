@@ -27,8 +27,6 @@ export default async function PrintAllTeacherBooks({ searchParams }: { searchPar
       .where(and(
         eq(teachingAssignments.userId, user.id),
         eq(teachingAssignments.teacherProfileId, profile.id),
-        eq(classes.teacherProfileId, profile.id),
-        eq(subjects.teacherProfileId, profile.id),
       ))
       .orderBy(asc(classes.name), asc(subjects.name));
 
