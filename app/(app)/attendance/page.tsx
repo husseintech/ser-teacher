@@ -43,6 +43,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
 
         {classRows.length ? (
           <form className="form-grid" method="get" target="_blank">
+            <input type="hidden" name="teacherId" value={profile.id} />
             <div className="form-row">
               <div className="field">
                 <label htmlFor="attendance-class">الصف والشعبة</label>
@@ -71,10 +72,10 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
             </div>
 
             <div className="print-actions">
-              <button className="btn btn-secondary" formAction={`/print/attendance/class/cover?teacherId=${profile.id}`} type="submit">
+              <button className="btn btn-secondary" formAction="/print/attendance/class/cover" type="submit">
                 <Printer size={18} />طباعة الغلاف
               </button>
-              <button className="btn btn-dark" formAction={`/print/attendance/class/book?teacherId=${profile.id}`} type="submit">
+              <button className="btn btn-dark" formAction="/print/attendance/class/book" type="submit">
                 <Printer size={18} />طباعة الدفتر كاملًا
               </button>
             </div>

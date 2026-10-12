@@ -1,6 +1,7 @@
 import { and, countDistinct, desc, eq } from "drizzle-orm";
 import { CheckCircle2, Clock3, UsersRound, XCircle } from "lucide-react";
 import { SetTeacherPasswordButton } from "@/components/admin/set-teacher-password-button";
+import { confirmTeacherEmailAction } from "@/app/admin-actions";
 import { getDb } from "@/db";
 import { classes, students, teacherProfiles, users } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth";
@@ -60,7 +61,19 @@ export default async function AccountsPage() {
                       <small className="table-subtext" dir="ltr">{account.email}</small>
                       <SetTeacherPasswordButton teacherId={account.id} teacherName={account.fullName} />
                     </td>
-                    <td>{account.emailVerifiedAt ? <span className="badge"><CheckCircle2 size={13} />مؤكد</span> : <span className="badge badge-unverified"><XCircle size={13} />غير مؤكد</span>}</td>
+                    <td>
+                      {account.emailVerifiedAt ? (
+                        <span className="badge"><CheckCircle2 size={13} />مؤكد</span>
+                      ) : (
+                        <div className="stack-sm">
+                          <span className="badge badge-unverified"><XCircle size={13} />غير مؤكد</span>
+                          <form action={confirmTeacherEmailAction}>
+                            <input type="hidden" name="teacherId" value={account.id} />
+                            <button className="btn btn-secondary btn-sm" type="submit">تأكيد البريد من الإدارة</button>
+                          </form>
+                        </div>
+                      )}
+                    </td>
                     <td>{account.schoolName || "لم تُدخل"}</td>
                     <td>{account.classCount}</td>
                     <td>{account.studentCount}</td>

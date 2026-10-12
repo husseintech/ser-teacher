@@ -142,7 +142,7 @@ export default async function PrintPage({
     } else if (section === "student-status") {
       content = <StudentStatusPage profile={safeProfile} className={schoolClass.name} students={studentRows} rowsCount={rowsCount} />;
     } else if (section === "summaries") {
-      content = <AttendanceSummaryPages profile={safeProfile} teacherName={user.fullName} className={schoolClass.name} students={studentRows} rowsCount={rowsCount} />;
+      content = <AttendanceSummaryPages profile={safeProfile} teacherName={safeProfile.name} className={schoolClass.name} students={studentRows} rowsCount={rowsCount} />;
     } else if (section === "book") {
       content = <>
         <StudentStatusPage profile={safeProfile} className={schoolClass.name} students={studentRows} rowsCount={rowsCount} />
@@ -157,7 +157,7 @@ export default async function PrintPage({
             key={month.number}
           />
         ))}
-        <AttendanceSummaryPages profile={safeProfile} teacherName={user.fullName} className={schoolClass.name} students={studentRows} rowsCount={rowsCount} />
+        <AttendanceSummaryPages profile={safeProfile} teacherName={safeProfile.name} className={schoolClass.name} students={studentRows} rowsCount={rowsCount} />
       </>;
     } else if (section.startsWith("month-")) {
       const month = Number(section.replace("month-", ""));
