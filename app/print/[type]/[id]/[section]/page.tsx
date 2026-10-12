@@ -17,7 +17,7 @@ import { ACADEMIC_MONTHS } from "@/lib/constants";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "طباعة السجل" };
 
-type PrintQuery = { stage?: string; rows?: string; classId?: string; shadeAugust?: string; teacherId?: string };
+type PrintQuery = { stage?: string; rows?: string; classId?: string; shadeAugust?: string; teacherId?: string; semesterLayout?: string };
 
 function safeRows(value: string | undefined, fallback: number) {
   const parsed = Number(value);
@@ -175,10 +175,16 @@ export default async function PrintPage({
   const isGradebookRecords = type === "gradebook" && id === "all" && section === "records";
 
   return (
-    <main className="print-root">
+    <main className={`print-root${isGradebookRecords && query.semesterLayout === "single" ? " combined-semester-gradebook" : ""}`}>
       {isGradebookRecords ? (
         <div className="screen-only print-export-bar">
           <GradebookExportButton stage={query.stage === "upper" ? "upper" : "basic"} rowsCount={query.rows ? Number(query.rows) || 40 : 40} teacherId={safeProfile.id} />
+          <a
+            className="btn btn-secondary btn-small"
+            href={`/print/gradebook/all/records?stage=${query.stage === "upper" ? "upper" : "basic"}&rows=${query.rows ? Number(query.rows) || 40 : 40}&teacherId=${safeProfile.id}&semesterLayout=${query.semesterLayout === "single" ? "separate" : "single"}`}
+          >
+            {query.semesterLayout === "single" ? "عرض كل فصل بصفحة مستقلة" : "جمع الفصلين في صفحة واحدة"}
+          </a>
         </div>
       ) : null}
       <PrintToolbar />{content}
