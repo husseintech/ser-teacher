@@ -46,7 +46,7 @@ function RegisterHeader({ profile, teacherName }: { profile: Profile; teacherNam
   );
 }
 
-export function GradebookPages({ profile, teacherName, className, subjectName, students, rowsCount, stage, assignmentId, classId, subjectId, teacherId, academicYear, weights }: {
+export function GradebookPages({ profile, teacherName, className, subjectName, students, rowsCount, stage, assignmentId, classId, subjectId, teacherId, academicYear, weights, combinedLayout = false }: {
   profile: Profile;
   teacherName: string;
   className: string;
@@ -60,6 +60,7 @@ export function GradebookPages({ profile, teacherName, className, subjectName, s
   teacherId: string;
   academicYear: string;
   weights?: { shortExam1: number; midtermExam: number; shortExam2: number; qualitative: number; finalExam: number };
+  combinedLayout?: boolean;
 }) {
   const rows = paddedStudents(students, rowsCount, `grade-${className}-${subjectName}`);
   const terms = [
@@ -82,24 +83,26 @@ export function GradebookPages({ profile, teacherName, className, subjectName, s
       />
     ) : null}
     {terms.map((term, termIndex) => (
-    <article className="print-page register-page" key={term.name}>
+    <article className={`print-page register-page${combinedLayout && termIndex === 1 ? " gradebook-second-semester" : ""}`} key={term.name}>
       <RegisterHeader profile={profile} teacherName={teacherName} />
       <h1 className="register-title">{term.name}</h1>
       <div className="register-meta"><strong>{className}</strong><strong>المبحث: {subjectName}</strong></div>
       {stage === "basic" ? (
         <table className="official-table grade-register-table" style={rowStyle(rowsCount)} aria-label={`${term.name} ${className} ${subjectName}`}>
           <thead>
-            <tr><th rowSpan={2} className="number-col">الرقم</th><th rowSpan={2} className="name-col">اسم الطالب</th><th colSpan={4}>الشهر</th><th rowSpan={2} className="term-average">معدل<br />{term.name.replace("الدراسي ", "")}</th></tr>
+            <tr>{!(combinedLayout && termIndex === 1) ? <><th rowSpan={2} className="number-col">الرقم</th><th rowSpan={2} className="name-col">اسم الطالب</th></> : null}<th colSpan={4}>الشهر</th><th rowSpan={2} className="term-average">معدل<br />{term.name.replace("الدراسي ", "")}</th></tr>
             <tr>{term.months.map((month) => <th key={month}>{month}</th>)}</tr>
           </thead>
-          <tbody>{rows.map((student, index) => <tr key={student.id}><td>{index + 1}</td><td className="name-col">{student.name}</td>{term.months.map((month) => <td key={month}></td>)}<td></td></tr>)}</tbody>
+          <tbody>{rows.map((student, index) => <tr key={student.id}>{!(combinedLayout && termIndex === 1) ? <><td>{index + 1}</td><td className="name-col">{student.name}</td></> : null}{term.months.map((month) => <td key={month}></td>)}<td></td></tr>)}</tbody>
         </table>
       ) : (
         <table className="official-table grade-register-table upper-grade-table" style={rowStyle(rowsCount)} aria-label={`${term.name} ${className} ${subjectName}`}>
           <thead>
             <tr>
-              <th rowSpan={2} className="number-col">الرقم</th>
-              <th rowSpan={2} className="name-col">اسم الطالب</th>
+              {!(combinedLayout && termIndex === 1) ? <>
+                <th rowSpan={2} className="number-col">الرقم</th>
+                <th rowSpan={2} className="name-col">اسم الطالب</th>
+              </> : null}
               <th>اختبار<br />قصير 1</th>
               <th>اختبار<br />نصف الفصل</th>
               <th>اختبار<br />قصير 2</th>
@@ -110,7 +113,7 @@ export function GradebookPages({ profile, teacherName, className, subjectName, s
             </tr>
             <tr className="weight-row"><th>{gradeWeights.shortExam1}</th><th>{gradeWeights.midtermExam}</th><th>{gradeWeights.shortExam2}</th><th>{gradeWeights.qualitative}</th><th>{gradeWeights.finalExam}</th></tr>
           </thead>
-          <tbody>{rows.map((student, index) => <tr key={student.id}><td>{index + 1}</td><td className="name-col">{student.name}</td>{Array.from({ length: termIndex === 1 ? 7 : 6 }, (_, cell) => <td key={cell}></td>)}</tr>)}</tbody>
+          <tbody>{rows.map((student, index) => <tr key={student.id}>{!(combinedLayout && termIndex === 1) ? <><td>{index + 1}</td><td className="name-col">{student.name}</td></> : null}{Array.from({ length: termIndex === 1 ? 7 : 6 }, (_, cell) => <td key={cell}></td>)}</tr>)}</tbody>
         </table>
       )}
     </article>
