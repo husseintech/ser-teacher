@@ -114,6 +114,7 @@ export default async function PrintPage({
           academicYear={safeProfile.academicYear}
           teacherId={safeProfile.id}
           weights={weightsByAssignment.get(`${assignment.classId}:${assignment.subjectId}`)}
+          combinedLayout={query.semesterLayout === "single"}
           key={assignment.id}
         />
       ))}</>;
