@@ -69,6 +69,39 @@ export async function setTeacherPasswordAction(_: ActionState, formData: FormDat
   }
 }
 
+export async function confirmTeacherEmailAction(formData: FormData): Promise<void> {
+  const admin = await requireAdmin();
+  const teacherId = z.string().uuid().parse(formData.get("teacherId"));
+  const db = getDb();
+  const [teacher] = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.id, teacherId), eq(users.role, "teacher")))
+    .limit(1);
+
+  if (!teacher) throw new Error("تعذّر العثور على حساب المعلم.");
+  if (teacher.emailVerifiedAt) {
+    revalidatePath("/admin/accounts");
+    return;
+  }
+
+  await db
+    .update(users)
+    .set({
+      emailVerifiedAt: new Date(),
+      verificationCodeHash: null,
+      verificationExpiresAt: null,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(users.id, teacher.id), eq(users.role, "teacher")));
+
+  await writeAuditLog(admin, "teacher_email_confirmed_by_admin", "تأكيد بريد معلم من الإدارة", {
+    teacherId: teacher.id,
+    teacherEmail: teacher.email,
+  });
+  revalidatePath("/admin/accounts");
+}
+
 export async function setAnonymousMessageStatusAction(formData: FormData) {
   const admin = await requireAdmin();
   const messageId = z.string().uuid().parse(formData.get("messageId"));
