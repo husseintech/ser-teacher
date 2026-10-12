@@ -141,65 +141,97 @@
 .year-totals-table th { width: 42mm; }
 .summary-signatures { display: flex; justify-content: space-between; gap: 20mm; margin-top: 9mm; font-size: 9pt; }
 
-/* خيار جمع الفصلين في صفحة A4 طولية واحدة */
+/* وضع الفصلين جنبًا إلى جنب في صفحة A4 طولية واحدة: الأول يمينًا والثاني يسارًا */
 .combined-semester-gradebook .register-page {
-  height: 148.5mm;
-  min-height: 148.5mm;
-  margin: 0 auto;
-  padding: 3mm 8mm;
-  page-break-after: auto;
-  break-after: auto;
+  display: inline-block;
+  vertical-align: top;
+  box-sizing: border-box;
+  width: 49.9%;
+  height: 297mm;
+  min-height: 297mm;
+  margin: 0;
+  padding: 7mm 3mm;
+  page-break-after: avoid;
+  break-after: avoid;
   box-shadow: none;
 }
+.combined-semester-gradebook .register-page:nth-of-type(2n + 1) {
+  border-left: 2px solid #000;
+}
 .combined-semester-gradebook .register-page:nth-of-type(2n) {
-  border-top: 2px solid #000;
+  page-break-after: always;
+  break-after: page;
 }
 .combined-semester-gradebook .register-header {
-  font-size: 6.2pt;
+  display: block;
+  font-size: 6pt;
+  margin-bottom: 1mm;
+}
+.combined-semester-gradebook .register-header strong {
+  display: block;
+  text-align: center;
   margin-bottom: .5mm;
 }
 .combined-semester-gradebook .register-title {
-  font-size: 11pt;
-  margin-bottom: .6mm;
+  font-size: 10pt;
+  margin-bottom: 1mm;
 }
 .combined-semester-gradebook .register-meta {
-  min-height: 5mm;
-  font-size: 7pt;
-  padding: .5mm 1.5mm;
+  min-height: 6mm;
+  font-size: 6.5pt;
+  padding: .5mm;
+}
+.combined-semester-gradebook .grade-register-table {
+  font-size: 5.8pt;
 }
 .combined-semester-gradebook .grade-register-table thead,
 .combined-semester-gradebook .upper-grade-table thead {
-  height: 10mm;
-}
-.combined-semester-gradebook .upper-grade-table .weight-row {
-  height: 4mm;
+  height: 15mm;
 }
 .combined-semester-gradebook .grade-register-table tbody tr,
 .combined-semester-gradebook .grade-register-table tbody td {
-  height: calc(105mm / var(--rows-count));
+  height: calc(232mm / var(--rows-count));
 }
 .combined-semester-gradebook .grade-register-table tbody td {
-  font-size: 6.4pt;
-  padding: 0 .4mm;
-}
-.combined-semester-gradebook .grade-register-table {
-  font-size: 6pt;
-}
-.combined-semester-gradebook .upper-grade-table thead th {
-  font-size: 5.8pt;
-}
-.combined-semester-gradebook .upper-grade-table .weight-row th {
   font-size: 6pt;
   padding: .2mm;
 }
+.combined-semester-gradebook .grade-register-table .name-col {
+  width: 38mm;
+  padding-right: 1mm;
+}
+.combined-semester-gradebook .grade-register-table .number-col {
+  width: 6mm;
+}
+.combined-semester-gradebook .grade-register-table .term-average {
+  width: 14mm;
+}
 .combined-semester-gradebook .upper-grade-table .name-col {
-  width: 45mm;
+  width: 34mm;
+}
+.combined-semester-gradebook .upper-grade-table .number-col {
+  width: 6mm;
+}
+.combined-semester-gradebook .upper-grade-table thead th {
+  font-size: 5pt;
+  padding: .2mm;
+}
+.combined-semester-gradebook .upper-grade-table .weight-row {
+  height: 5mm;
+}
+.combined-semester-gradebook .upper-grade-table .weight-row th {
+  font-size: 5.5pt;
+  padding: .2mm;
 }
 .combined-semester-gradebook .upper-grade-table .semester-total-head {
-  width: 18mm;
+  width: 13mm;
 }
 .combined-semester-gradebook .upper-grade-table .completion-head {
-  width: 12mm;
+  width: 9mm;
+}
+@media print {
+  .combined-semester-gradebook .grade-weight-editor { display: none !important; }
+  .combined-semester-gradebook .register-page { width: 49.9%; }
 }
 @page { size: A4 portrait; margin: 0; }
 
