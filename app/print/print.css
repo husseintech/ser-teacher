@@ -258,3 +258,45 @@
 .grade-weight-editor-actions { display: flex; align-items: center; justify-content: space-between; gap: 2mm; margin-top: 2mm; font-size: 7pt; }
 @media print { .screen-only { display: none !important; } .combined-semester-gradebook .grade-weight-editor { display: none !important; } }
 @media screen and (max-width: 650px) { .grade-weight-editor-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+
+/* التحكم بحجم خط أسماء الطلاب في دفتر العلامات فقط */
+.grade-register-table tbody .name-col {
+  font-size: var(--gradebook-name-font-size, 7.5pt) !important;
+}
+.gradebook-name-size-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 2px 4px;
+  font-size: 13px;
+}
+.gradebook-name-size-value {
+  min-width: 42px;
+  text-align: center;
+  direction: ltr;
+  font-variant-numeric: tabular-nums;
+}
+.gradebook-name-size-control button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+@media screen and (max-width: 650px) {
+  .print-toolbar {
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .gradebook-name-size-control {
+    width: 100%;
+    order: -1;
+    gap: 6px;
+  }
+  .gradebook-name-size-control span {
+    font-size: 12px;
+  }
+}
+@media print {
+  .gradebook-name-size-control { display: none !important; }
+}
