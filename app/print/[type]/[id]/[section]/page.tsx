@@ -188,7 +188,7 @@ export default async function PrintPage({
           </a>
         </div>
       ) : null}
-      <PrintToolbar />{content}
+      <PrintToolbar gradebook={isGradebookRecords} combinedLayout={query.semesterLayout === "single"} />{content}
     </main>
   );
 }
