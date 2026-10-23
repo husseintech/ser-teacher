@@ -1,5 +1,6 @@
 import { asc, eq } from "drizzle-orm";
-import { Printer, UsersRound } from "lucide-react";
+import { UsersRound } from "lucide-react";
+import { PrintReportButton } from "@/components/admin/print-report-button";
 import { getDb } from "@/db";
 import { teacherProfiles, users } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth";
@@ -47,7 +48,7 @@ export default async function TeachersReportPage() {
           <h1>تقرير جميع المعلمين</h1>
           <p>حصر شامل للمعلمين المسجلين، سواء كانوا حسابات رئيسية أو معلمين مضافين داخل حساب رئيسي.</p>
         </div>
-        <button className="btn btn-dark" type="button" onClick={() => window.print()} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Printer size={18} />طباعة التقرير</button>
+        <PrintReportButton />
       </header>
 
       <header className="teacher-report-print-header">
