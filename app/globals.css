@@ -359,3 +359,36 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .subject-edit-form { flex: 1; }
 .subject-item > form:last-child { flex: 0 0 auto; }
 @media (max-width: 640px) { .subject-item { align-items: stretch; flex-direction: column; } .subject-item > form:last-child { align-self: flex-start; } }
+
+
+.admin-teacher-report-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 20px; }
+.admin-teachers-report-table { min-width: 1080px; }
+.admin-teachers-report-table tfoot th { padding: 14px 12px; color: var(--navy); background: #f1f6f7; border-top: 2px solid var(--navy); font-weight: 800; }
+.teacher-report-print-header { display: none; }
+@media print {
+  @page { size: A4 landscape; margin: 12mm; }
+  body { color: #111 !important; background: #fff !important; font-size: 10pt; }
+  body:has(.admin-teachers-report-table) .sidebar,
+  body:has(.admin-teachers-report-table) .mobile-header,
+  body:has(.admin-teachers-report-table) .anonymous-message-trigger { display: none !important; }
+  body:has(.admin-teachers-report-table) .app-shell { display: block !important; }
+  body:has(.admin-teachers-report-table) .page-main { padding: 0 !important; }
+  body:has(.admin-teachers-report-table) .page-container { width: 100% !important; max-width: none !important; padding: 0 !important; }
+  body:has(.admin-teachers-report-table) .no-print { display: none !important; }
+  body:has(.admin-teachers-report-table) .teacher-report-print-header { display: block !important; text-align: center; margin-bottom: 12px; }
+  body:has(.admin-teachers-report-table) .teacher-report-print-header h1 { margin: 0; font-size: 20pt; }
+  body:has(.admin-teachers-report-table) .teacher-report-print-header p { margin: 3px 0 0; color: #333; }
+  body:has(.admin-teachers-report-table) .admin-teacher-report-stats { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 8px; margin-bottom: 10px; }
+  body:has(.admin-teachers-report-table) .stat-card { padding: 8px 10px; border: 1px solid #aaa; box-shadow: none; }
+  body:has(.admin-teachers-report-table) .stat-icon { display: none !important; }
+  body:has(.admin-teachers-report-table) .card { padding: 0 !important; border: 0 !important; box-shadow: none !important; }
+  body:has(.admin-teachers-report-table) .card-title { margin-bottom: 5px; }
+  body:has(.admin-teachers-report-table) .card-title > div > span { display: none; }
+  body:has(.admin-teachers-report-table) .data-table-wrap { overflow: visible !important; }
+  body:has(.admin-teachers-report-table) .admin-teachers-report-table { width: 100% !important; min-width: 0 !important; border-collapse: collapse !important; font-size: 8.5pt; }
+  body:has(.admin-teachers-report-table) .admin-teachers-report-table th,
+  body:has(.admin-teachers-report-table) .admin-teachers-report-table td { padding: 5px 6px !important; border: 1px solid #888 !important; color: #111 !important; }
+  body:has(.admin-teachers-report-table) .admin-teachers-report-table thead { display: table-header-group; }
+  body:has(.admin-teachers-report-table) .admin-teachers-report-table tr { break-inside: avoid; }
+  body:has(.admin-teachers-report-table) .admin-teachers-report-table .badge { padding: 0; color: #111 !important; background: transparent !important; border: 0 !important; }
+}
