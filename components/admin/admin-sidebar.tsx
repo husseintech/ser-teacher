@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, LayoutDashboard, LogOut, Menu, MessageSquareText, ShieldAlert, UsersRound } from "lucide-react";
+import { Activity, ClipboardList, LayoutDashboard, LogOut, Menu, MessageSquareText, ShieldAlert, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -10,6 +10,7 @@ import { Brand } from "@/components/brand";
 const navigation = [
   { href: "/admin", label: "نظرة عامة", icon: LayoutDashboard },
   { href: "/admin/accounts", label: "حسابات المعلمين", icon: UsersRound },
+  { href: "/admin/teachers-report", label: "تقرير جميع المعلمين", icon: ClipboardList },
   { href: "/admin/messages", label: "صندوق الرسائل", icon: MessageSquareText },
   { href: "/admin/activity", label: "سجل النشاط", icon: Activity },
   { href: "/admin/maintenance", label: "صيانة النظام", icon: ShieldAlert },
