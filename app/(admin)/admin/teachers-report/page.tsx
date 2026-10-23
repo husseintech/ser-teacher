@@ -42,12 +42,17 @@ export default async function TeachersReportPage() {
 
   return (
     <>
-      <header className="page-header">
+      <header className="page-header no-print">
         <div>
           <h1>تقرير جميع المعلمين</h1>
           <p>حصر شامل للمعلمين المسجلين، سواء كانوا حسابات رئيسية أو معلمين مضافين داخل حساب رئيسي.</p>
         </div>
-        <button className="btn btn-dark no-print" type="button" onClick={() => window.print()} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Printer size={18} />طباعة التقرير</button>
+        <button className="btn btn-dark" type="button" onClick={() => window.print()} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Printer size={18} />طباعة التقرير</button>
+      </header>
+
+      <header className="teacher-report-print-header">
+        <h1>تقرير جميع المعلمين</h1>
+        <p>تقرير إداري شامل للمعلمين المسجلين في النظام</p>
       </header>
 
       <section className="stats-grid admin-teacher-report-stats" aria-label="ملخص عدد المعلمين">
@@ -56,7 +61,7 @@ export default async function TeachersReportPage() {
         <div className="stat-card"><div className="stat-icon"><UsersRound /></div><div><strong>{addedCount}</strong><span>المعلمون المضافون ضمن حساب رئيسي</span></div></div>
       </section>
 
-      <section className="card">
+      <section className="card teacher-report-card">
         <div className="card-title">
           <div><h2>قائمة المعلمين</h2><span style={{ color: "var(--muted)" }}>يُحتسب كل سجل معلم مرة واحدة، مع إظهار الحساب الرئيسي المرتبط به.</span></div>
           <span className="badge admin-count-badge">{rows.length} معلم</span>
