@@ -12,20 +12,35 @@ export default async function TeachersReportPage() {
   const db = getDb();
 
   // Every teacher profile is one actual teacher. A user may own multiple profiles.
-  const rows = await db
-    .select({
-      profileId: teacherProfiles.id,
-      teacherName: teacherProfiles.name,
-      schoolName: teacherProfiles.schoolName,
-      createdAt: teacherProfiles.createdAt,
-      ownerId: users.id,
-      ownerName: users.fullName,
-      ownerEmail: users.email,
-    })
-    .from(teacherProfiles)
-    .innerJoin(users, eq(teacherProfiles.userId, users.id))
-    .where(eq(users.role, "teacher"))
-    .orderBy(asc(users.fullName), asc(teacherProfiles.createdAt), asc(teacherProfiles.name));
+  let rows: {
+    profileId: string;
+    teacherName: string;
+    schoolName: string;
+    createdAt: Date;
+    ownerId: string;
+    ownerName: string;
+    ownerEmail: string;
+  }[] = [];
+
+  try {
+    rows = await db
+      .select({
+        profileId: teacherProfiles.id,
+        teacherName: teacherProfiles.name,
+        schoolName: teacherProfiles.schoolName,
+        createdAt: teacherProfiles.createdAt,
+        ownerId: users.id,
+        ownerName: users.fullName,
+        ownerEmail: users.email,
+      })
+      .from(teacherProfiles)
+      .innerJoin(users, eq(teacherProfiles.userId, users.id))
+      .where(eq(users.role, "teacher"))
+      .orderBy(asc(users.fullName), asc(teacherProfiles.createdAt), asc(teacherProfiles.name));
+  } catch (error) {
+    console.error("[admin/teachers-report] Failed to load teacher profiles:", error);
+    throw new Error("تعذر تحميل سجلات المعلمين من قاعدة البيانات. راجع سجلات Runtime Logs في Vercel.");
+  }
 
   // The first-created profile of each login account is its primary teacher profile.
   const firstProfileByOwner = new Map<string, (typeof rows)[number]>();
